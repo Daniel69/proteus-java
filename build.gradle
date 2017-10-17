@@ -1,0 +1,332 @@
+buildscript {
+  repositories {
+    mavenCentral()
+    mavenLocal()
+    maven {
+      url "https://plugins.gradle.org/m2/"
+    }
+  }
+  dependencies {
+    classpath 'com.google.gradle:osdetector-gradle-plugin:1.4.0'
+    classpath 'ru.vyarus:gradle-animalsniffer-plugin:1.4.0'
+    classpath 'net.ltgt.gradle:gradle-errorprone-plugin:0.0.11'
+    classpath "me.champeau.gradle:jmh-gradle-plugin:0.4.4"
+  }
+}
+
+subprojects {
+    apply plugin: "checkstyle"
+    apply plugin: "java"
+    apply plugin: "maven"
+    apply plugin: "idea"
+    apply plugin: "signing"
+    apply plugin: "jacoco"
+
+    apply plugin: "me.champeau.gradle.jmh"
+    apply plugin: "com.google.osdetector"
+    // The plugin only has an effect if a signature is specified
+    apply plugin: "ru.vyarus.animalsniffer"
+    if (!rootProject.hasProperty('errorProne') || rootProject.errorProne.toBoolean()) {
+      apply plugin: "net.ltgt.errorprone"
+
+      dependencies {
+        // The ErrorProne plugin defaults to the latest, which would break our
+        // build if error prone releases a new version with a new check
+        errorprone 'com.google.errorprone:error_prone_core:2.0.21'
+      }
+    } else {
+      // Remove per-project error-prone checker config
+      allprojects {
+        afterEvaluate { project ->
+          project.tasks.withType(JavaCompile) {
+            options.compilerArgs.removeAll { it.startsWith("-Xep:") }
+          }
+        }
+      }
+    }
+
+    group = "io.netifi.proteus"
+    version = "0.1.0-SNAPSHOT" // CURRENT_PROTEUS_VERSION
+
+    sourceCompatibility = 1.6
+    targetCompatibility = 1.6
+
+    repositories {
+        mavenCentral()
+        mavenLocal()
+        maven {
+          url "https://oss.sonatype.org/content/repositories/snapshots/"
+        }
+        maven {
+          url 'https://oss.jfrog.org/libs-snapshot'
+        }
+    }
+
+    [compileJava, compileTestJava, compileJmhJava].each() {
+        it.options.compilerArgs += ["-Xlint:all", "-Xlint:-options", "-Xlint:-path"]
+        it.options.encoding = "UTF-8"
+        if (rootProject.hasProperty('failOnWarnings') && rootProject.failOnWarnings.toBoolean()) {
+            it.options.compilerArgs += ["-Werror"]
+        }
+    }
+
+    compileTestJava {
+      // serialVersionUID is basically guaranteed to be useless in our tests
+      options.compilerArgs += ["-Xlint:-serial"]
+    }
+
+    jar.manifest {
+        attributes('Implementation-Title': name,
+                'Implementation-Version': version,
+                'Built-By': System.getProperty('user.name'),
+                'Built-JDK': System.getProperty('java.version'),
+                'Source-Compatibility': sourceCompatibility,
+                'Target-Compatibility': targetCompatibility)
+    }
+
+    javadoc.options {
+        encoding = 'UTF-8'
+        use = true
+        links 'https://docs.oracle.com/javase/8/docs/api/'
+    }
+
+    ext {
+        def exeSuffix = osdetector.os == 'windows' ? ".exe" : ""
+        protocPluginBaseName = 'proteus-java'
+        javaPluginPath = "$rootDir/compiler/build/exe/java_plugin/$protocPluginBaseName$exeSuffix"
+
+        rSocketVersion = '0.9.12'
+        protobufVersion = '3.4.0'
+        protocVersion = protobufVersion
+
+        configureProtoCompilation = {
+          String generatedSourcePath = "${projectDir}/src/generated"
+          if (rootProject.childProjects.containsKey('proteus-compiler')) {
+            // Only when the codegen is built along with the project, will we be able to recompile
+            // the proto files.
+            project.apply plugin: 'com.google.protobuf'
+            project.protobuf {
+              protoc {
+                if (project.hasProperty('protoc')) {
+                  path = project.protoc
+                } else {
+                  artifact = "com.google.protobuf:protoc:${protocVersion}"
+                }
+              }
+              plugins {
+                proteus {
+                  path = javaPluginPath
+                }
+              }
+              generateProtoTasks {
+                all().each { task ->
+                  task.dependsOn ':proteus-compiler:java_pluginExecutable'
+                  // Delete the generated sources first, so that we can be alerted if they are not re-compiled.
+                  task.dependsOn 'deleteGeneratedSource' + task.sourceSet.name
+                  // Recompile protos when the codegen has been changed
+                  task.inputs.file javaPluginPath
+                  // Recompile protos when build.gradle has been changed, because
+                  // it's possible the version of protoc has been changed.
+                  task.inputs.file "${rootProject.projectDir}/build.gradle"
+                  task.plugins {
+                    proteus {
+                      option 'noversion'
+                    }
+                  }
+                }
+              }
+              generatedFilesBaseDir = generatedSourcePath
+            }
+
+            sourceSets.each { sourceSet ->
+              task "deleteGeneratedSource${sourceSet.name}" {
+                doLast {
+                  project.delete project.fileTree(dir: generatedSourcePath + '/' + sourceSet.name)
+                }
+              }
+            }
+          } else {
+            // Otherwise, we just use the checked-in generated code.
+            project.sourceSets {
+              main {
+                java {
+                  srcDir "${generatedSourcePath}/main/java"
+                  srcDir "${generatedSourcePath}/main/proteus"
+                }
+              }
+              test {
+                java {
+                  srcDir "${generatedSourcePath}/test/java"
+                  srcDir "${generatedSourcePath}/test/proteus"
+                }
+              }
+            }
+          }
+
+          [compileJava, compileTestJava, compileJmhJava].each() {
+            // Protobuf-generated code produces some warnings.
+            // https://github.com/google/protobuf/issues/2718
+            it.options.compilerArgs += ["-Xlint:-cast", "-Xep:MissingOverride:OFF",
+                "-Xep:ReferenceEquality:OFF", "-Xep:FunctionalInterfaceClash:OFF"]
+          }
+        }
+
+        def epoll_suffix = "";
+        if (osdetector.classifier in ["linux-x86_64"]) {
+            // The native code is only pre-compiled on certain platforms.
+            epoll_suffix = ":" + osdetector.classifier
+        }
+        libraries = [
+                errorprone: "com.google.errorprone:error_prone_annotations:2.0.19",
+                jsr305: 'com.google.code.findbugs:jsr305:3.0.0',
+
+                rsocket_core: "io.rsocket:rsocket-core:${rSocketVersion}",
+                rsocket_transport: "io.rsocket:rsocket-transport-netty:${rSocketVersion}",
+
+                protobuf: "com.google.protobuf:protobuf-java:${protobufVersion}",
+                protobuf_lite: "com.google.protobuf:protobuf-lite:3.0.1",
+                protoc_lite: "com.google.protobuf:protoc-gen-javalite:3.0.0",
+                protobuf_plugin: "com.google.protobuf:protobuf-gradle-plugin:0.8.3",
+
+                // Test dependencies.
+                junit: 'junit:junit:4.12',
+                mockito: 'org.mockito:mockito-core:1.9.5'
+        ]
+    }
+
+    dependencies {
+        testCompile libraries.junit,
+                    libraries.mockito
+
+        jmh 'org.openjdk.jmh:jmh-core:1.19',
+            'org.openjdk.jmh:jmh-generator-bytecode:1.19'
+    }
+
+    signing {
+        required false
+        sign configurations.archives
+    }
+
+    // Disable JavaDoc doclint on Java 8. It's annoying.
+    if (JavaVersion.current().isJava8Compatible()) {
+      allprojects {
+        tasks.withType(Javadoc) {
+          options.addStringOption('Xdoclint:none', '-quiet')
+        }
+      }
+    }
+
+    checkstyle {
+        configFile = file("$rootDir/buildscripts/checkstyle.xml")
+        toolVersion = "6.17"
+        ignoreFailures = true
+        if (rootProject.hasProperty("checkstyle.ignoreFailures")) {
+            ignoreFailures = rootProject.properties["checkstyle.ignoreFailures"].toBoolean()
+        }
+        configProperties["rootDir"] = rootDir
+    }
+
+    checkstyleMain {
+        source = fileTree(dir: "src/main", include: "**/*.java")
+    }
+
+    checkstyleTest {
+        source = fileTree(dir: "src/test", include: "**/*.java")
+    }
+
+    jmh {
+        warmupIterations = 10
+        iterations = 10
+        fork = 1
+        // None of our benchmarks need the tests, and we have pseudo-circular
+        // dependencies that break when including them. (context's testCompile
+        // depends on core; core's testCompile depends on testing)
+        includeTests = false
+    }
+
+    task javadocJar(type: Jar) {
+        classifier = 'javadoc'
+        from javadoc
+    }
+
+    task sourcesJar(type: Jar) {
+        classifier = 'sources'
+        from sourceSets.main.allSource
+    }
+
+    artifacts {
+        archives javadocJar, sourcesJar
+    }
+
+    uploadArchives.repositories.mavenDeployer {
+        beforeDeployment { MavenDeployment deployment -> signing.signPom(deployment) }
+        String stagingUrl
+        if (rootProject.hasProperty('repositoryId')) {
+          stagingUrl = 'https://oss.sonatype.org/service/local/staging/deployByRepositoryId/' +
+              rootProject.repositoryId
+        } else {
+          stagingUrl = 'https://oss.sonatype.org/service/local/staging/deploy/maven2/'
+        }
+        def configureAuth = {
+          if (rootProject.hasProperty('ossrhUsername') && rootProject.hasProperty('ossrhPassword')) {
+            authentication(userName: rootProject.ossrhUsername, password: rootProject.ossrhPassword)
+          }
+        }
+        repository(url: stagingUrl, configureAuth)
+        snapshotRepository(url: 'https://oss.sonatype.org/content/repositories/snapshots/', configureAuth)
+    }
+
+    [
+      install.repositories.mavenInstaller,
+      uploadArchives.repositories.mavenDeployer,
+    ]*.pom*.whenConfigured { pom ->
+        pom.project {
+            name "$project.group:$project.name"
+            description project.description
+            url 'https://github.com/netifi/proteus-java'
+
+            scm {
+                connection 'scm:git:https://github.com/netifi/proteus-java.git'
+                developerConnection 'scm:git:git@github.com:netifi/proteus-java.git'
+                url 'https://github.com/netifi/proteus-java'
+            }
+
+            licenses {
+                license {
+                    name 'Apache 2.0'
+                    url 'https://opensource.org/licenses/Apache-2.0'
+                }
+            }
+
+            developers {
+                developer {
+                    id "netifi.io"
+                    name "Netifi Inc."
+                    email "info@netifi.io"
+                    url "https://netifi.io/"
+                    organization = "Netifi Inc."
+                    organizationUrl "https://www.netifi.io"
+                }
+            }
+        }
+        if (!(project.name in
+            ["proteus-protobuf", "proteus-protobuf-lite"])) {
+          def core = pom.dependencies.find {dep -> dep.artifactId == 'proteus-core'}
+          if (core != null) {
+            // Depend on specific version of proteus-core because internal package is unstable
+            core.version = "[" + core.version + "]"
+          }
+        }
+    }
+    // At a test failure, log the stack trace to the console so that we don't
+    // have to open the HTML in a browser.
+    test {
+        testLogging {
+            exceptionFormat = 'full'
+            showExceptions true
+            showCauses true
+            showStackTraces true
+        }
+        maxHeapSize = '1500m'
+    }
+}

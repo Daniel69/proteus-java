@@ -1,0 +1,70 @@
+package io.netifi.testing.integration;
+
+/**
+ * <pre>
+ * Test service that supports all call types.
+ * </pre>
+ */
+@javax.annotation.Generated(
+    value = "by Proteus proto compiler (version 0.1.0-SNAPSHOT)",
+    comments = "Source: test.proto")
+public interface TestService extends io.rsocket.Availability, io.rsocket.Closeable {
+  int PACKAGE_ID = 298608432;
+  int SERVICE_ID = -1674778812;
+  int METHOD_UNARY_CALL = 648984984;
+  int METHOD_EMPTY_CALL = -185042726;
+  int METHOD_STREAMING_OUTPUT_CALL = 1489645874;
+  int METHOD_STREAMING_INPUT_CALL = 806065781;
+  int METHOD_FULL_BIDI_CALL = -1115099530;
+  int METHOD_HALF_BIDI_CALL = 136391454;
+
+  /**
+   * <pre>
+   * One request followed by one response.
+   * The server returns the client payload as-is.
+   * </pre>
+   */
+  reactor.core.publisher.Mono<io.netifi.testing.integration.Test.SimpleResponse> unaryCall(io.netifi.testing.integration.Test.SimpleRequest message);
+
+  /**
+   * <pre>
+   * One request followed by an empty response.
+   * </pre>
+   */
+  reactor.core.publisher.Mono<Void> emptyCall(io.netifi.testing.integration.Test.SimpleRequest message);
+
+  /**
+   * <pre>
+   * One request followed by a sequence of responses (streamed download).
+   * The server returns the payload with client desired type and sizes.
+   * </pre>
+   */
+  reactor.core.publisher.Flux<io.netifi.testing.integration.Test.StreamingOutputCallResponse> streamingOutputCall(io.netifi.testing.integration.Test.StreamingOutputCallRequest message);
+
+  /**
+   * <pre>
+   * A sequence of requests followed by one response (streamed upload).
+   * The server returns the aggregated size of client payload as the result.
+   * </pre>
+   */
+  reactor.core.publisher.Mono<io.netifi.testing.integration.Test.StreamingInputCallResponse> streamingInputCall(org.reactivestreams.Publisher<io.netifi.testing.integration.Test.StreamingInputCallRequest> messages);
+
+  /**
+   * <pre>
+   * A sequence of requests with each request served by the server immediately.
+   * As one request could lead to multiple responses, this interface
+   * demonstrates the idea of full bidirectionality.
+   * </pre>
+   */
+  reactor.core.publisher.Flux<io.netifi.testing.integration.Test.StreamingOutputCallResponse> fullBidiCall(org.reactivestreams.Publisher<io.netifi.testing.integration.Test.StreamingOutputCallRequest> messages);
+
+  /**
+   * <pre>
+   * A sequence of requests followed by a sequence of responses.
+   * The server buffers all the client requests and then serves them in order. A
+   * stream of responses are returned to the client when the server starts with
+   * first request.
+   * </pre>
+   */
+  reactor.core.publisher.Flux<io.netifi.testing.integration.Test.StreamingOutputCallResponse> halfBidiCall(org.reactivestreams.Publisher<io.netifi.testing.integration.Test.StreamingOutputCallRequest> messages);
+}

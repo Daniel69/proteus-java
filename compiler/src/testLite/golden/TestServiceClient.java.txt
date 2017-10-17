@@ -1,0 +1,300 @@
+package io.netifi.testing.integration;
+
+@javax.annotation.Generated(
+    value = "by Proteus proto compiler (version 0.1.0-SNAPSHOT)",
+    comments = "Source: test.proto")
+public final class TestServiceClient implements TestService {
+  private final io.rsocket.RSocket rSocket;
+  private final long accountId, fromAccountId;
+  private final String group, fromGroup;
+  private final String destination, fromDestination;
+
+  private final io.netifi.proteus.util.TimebasedIdGenerator generator;
+  private final io.netifi.proteus.auth.SessionUtil sessionUtil;
+  private final java.util.concurrent.atomic.AtomicLong currentSessionCounter;
+  private final java.util.concurrent.atomic.AtomicReference<byte[]> currentSessionToken;
+
+  public TestServiceClient(
+      io.rsocket.RSocket rSocket,
+      long accountId,
+      String group,
+      String destination,
+      long fromAccountId,
+      String fromGroup,
+      String fromDestination,
+      io.netifi.proteus.util.TimebasedIdGenerator generator,
+      io.netifi.proteus.auth.SessionUtil sessionUtil,
+      java.util.concurrent.atomic.AtomicLong currentSessionCounter,
+      java.util.concurrent.atomic.AtomicReference<byte[]> currentSessionToken) {
+    this.rSocket = rSocket;
+    this.accountId = accountId;
+    this.group = group;
+    this.destination = destination;
+    this.fromAccountId = fromAccountId;
+    this.fromGroup = fromGroup;
+    this.fromDestination = fromDestination;
+    this.generator = generator;
+    this.sessionUtil = sessionUtil;
+    this.currentSessionCounter = currentSessionCounter;
+    this.currentSessionToken = currentSessionToken;
+  }
+
+  @java.lang.Override
+  public reactor.core.publisher.Mono<io.netifi.testing.integration.Test.SimpleResponse> unaryCall(io.netifi.testing.integration.Test.SimpleRequest message) {
+    io.netty.buffer.ByteBuf route;
+    if (destination != null && !destination.isEmpty()) {
+      int length = io.netifi.proteus.frames.RouteDestinationFlyweight.computeLength(io.netifi.proteus.frames.RouteType.STREAM_ID_ROUTE, destination, group);
+      route = io.netty.buffer.PooledByteBufAllocator.DEFAULT.directBuffer(length);
+      io.netifi.proteus.frames.RouteDestinationFlyweight.encodeRouteByDestination(route, io.netifi.proteus.frames.RouteType.STREAM_ID_ROUTE, accountId, destination, group);
+    } else {
+      int length = io.netifi.proteus.frames.RouteDestinationFlyweight.computeLength(io.netifi.proteus.frames.RouteType.STREAM_GROUP_ROUTE, group);
+      route = io.netty.buffer.PooledByteBufAllocator.DEFAULT.directBuffer(length);
+      io.netifi.proteus.frames.RouteDestinationFlyweight.encodeRouteByGroup(route, io.netifi.proteus.frames.RouteType.STREAM_GROUP_ROUTE, accountId, group);
+    }
+
+    int length = io.netifi.proteus.frames.RoutingFlyweight.computeLength(true, false, true, fromDestination, route);
+    io.netty.buffer.ByteBuf metadata = io.netty.buffer.PooledByteBufAllocator.DEFAULT.directBuffer(length);
+    java.nio.ByteBuffer data = message.toByteString().asReadOnlyByteBuffer();
+    int requestToken = sessionUtil.generateRequestToken(currentSessionToken.get(), data, currentSessionCounter.incrementAndGet());
+    io.netifi.proteus.frames.RoutingFlyweight.encode(
+        metadata,
+        true,
+        true,
+        false,
+        requestToken,
+        fromAccountId,
+        fromDestination,
+        0,
+        TestService.PACKAGE_ID,
+        TestService.SERVICE_ID,
+        TestService.METHOD_UNARY_CALL,
+        generator.nextId(),
+        route);
+
+    return rSocket.requestResponse(new io.rsocket.util.PayloadImpl(data, metadata.nioBuffer()))
+      .map(deserializer(io.netifi.testing.integration.Test.SimpleResponse.parser()));
+  }
+
+  @java.lang.Override
+  public reactor.core.publisher.Mono<Void> emptyCall(io.netifi.testing.integration.Test.SimpleRequest message) {
+    io.netty.buffer.ByteBuf route;
+    if (destination != null && !destination.isEmpty()) {
+      int length = io.netifi.proteus.frames.RouteDestinationFlyweight.computeLength(io.netifi.proteus.frames.RouteType.STREAM_ID_ROUTE, destination, group);
+      route = io.netty.buffer.PooledByteBufAllocator.DEFAULT.directBuffer(length);
+      io.netifi.proteus.frames.RouteDestinationFlyweight.encodeRouteByDestination(route, io.netifi.proteus.frames.RouteType.STREAM_ID_ROUTE, accountId, destination, group);
+    } else {
+      int length = io.netifi.proteus.frames.RouteDestinationFlyweight.computeLength(io.netifi.proteus.frames.RouteType.STREAM_GROUP_ROUTE, group);
+      route = io.netty.buffer.PooledByteBufAllocator.DEFAULT.directBuffer(length);
+      io.netifi.proteus.frames.RouteDestinationFlyweight.encodeRouteByGroup(route, io.netifi.proteus.frames.RouteType.STREAM_GROUP_ROUTE, accountId, group);
+    }
+
+    int length = io.netifi.proteus.frames.RoutingFlyweight.computeLength(true, false, true, fromDestination, route);
+    io.netty.buffer.ByteBuf metadata = io.netty.buffer.PooledByteBufAllocator.DEFAULT.directBuffer(length);
+    java.nio.ByteBuffer data = message.toByteString().asReadOnlyByteBuffer();
+    int requestToken = sessionUtil.generateRequestToken(currentSessionToken.get(), data, currentSessionCounter.incrementAndGet());
+    io.netifi.proteus.frames.RoutingFlyweight.encode(
+        metadata,
+        true,
+        true,
+        false,
+        requestToken,
+        fromAccountId,
+        fromDestination,
+        0,
+        TestService.PACKAGE_ID,
+        TestService.SERVICE_ID,
+        TestService.METHOD_EMPTY_CALL,
+        generator.nextId(),
+        route);
+
+    return rSocket.fireAndForget(new io.rsocket.util.PayloadImpl(data, metadata.nioBuffer()));
+  }
+
+  @java.lang.Override
+  public reactor.core.publisher.Flux<io.netifi.testing.integration.Test.StreamingOutputCallResponse> streamingOutputCall(io.netifi.testing.integration.Test.StreamingOutputCallRequest message) {
+    io.netty.buffer.ByteBuf route;
+    if (destination != null && !destination.isEmpty()) {
+      int length = io.netifi.proteus.frames.RouteDestinationFlyweight.computeLength(io.netifi.proteus.frames.RouteType.STREAM_ID_ROUTE, destination, group);
+      route = io.netty.buffer.PooledByteBufAllocator.DEFAULT.directBuffer(length);
+      io.netifi.proteus.frames.RouteDestinationFlyweight.encodeRouteByDestination(route, io.netifi.proteus.frames.RouteType.STREAM_ID_ROUTE, accountId, destination, group);
+    } else {
+      int length = io.netifi.proteus.frames.RouteDestinationFlyweight.computeLength(io.netifi.proteus.frames.RouteType.STREAM_GROUP_ROUTE, group);
+      route = io.netty.buffer.PooledByteBufAllocator.DEFAULT.directBuffer(length);
+      io.netifi.proteus.frames.RouteDestinationFlyweight.encodeRouteByGroup(route, io.netifi.proteus.frames.RouteType.STREAM_GROUP_ROUTE, accountId, group);
+    }
+
+    int length = io.netifi.proteus.frames.RoutingFlyweight.computeLength(true, false, true, fromDestination, route);
+    io.netty.buffer.ByteBuf metadata = io.netty.buffer.PooledByteBufAllocator.DEFAULT.directBuffer(length);
+    java.nio.ByteBuffer data = message.toByteString().asReadOnlyByteBuffer();
+    int requestToken = sessionUtil.generateRequestToken(currentSessionToken.get(), data, currentSessionCounter.incrementAndGet());
+    io.netifi.proteus.frames.RoutingFlyweight.encode(
+        metadata,
+        true,
+        true,
+        false,
+        requestToken,
+        fromAccountId,
+        fromDestination,
+        0,
+        TestService.PACKAGE_ID,
+        TestService.SERVICE_ID,
+        TestService.METHOD_STREAMING_OUTPUT_CALL,
+        generator.nextId(),
+        route);
+
+    return rSocket.requestStream(new io.rsocket.util.PayloadImpl(data, metadata.nioBuffer()))
+      .map(deserializer(io.netifi.testing.integration.Test.StreamingOutputCallResponse.parser()));
+  }
+
+  @java.lang.Override
+  public reactor.core.publisher.Mono<io.netifi.testing.integration.Test.StreamingInputCallResponse> streamingInputCall(org.reactivestreams.Publisher<io.netifi.testing.integration.Test.StreamingInputCallRequest> messages) {
+    final io.netty.buffer.ByteBuf route;
+    if (destination != null && !destination.isEmpty()) {
+      int length = io.netifi.proteus.frames.RouteDestinationFlyweight.computeLength(io.netifi.proteus.frames.RouteType.STREAM_ID_ROUTE, destination, group);
+      route = io.netty.buffer.PooledByteBufAllocator.DEFAULT.directBuffer(length);
+      io.netifi.proteus.frames.RouteDestinationFlyweight.encodeRouteByDestination(route, io.netifi.proteus.frames.RouteType.STREAM_ID_ROUTE, accountId, destination, group);
+    } else {
+      int length = io.netifi.proteus.frames.RouteDestinationFlyweight.computeLength(io.netifi.proteus.frames.RouteType.STREAM_GROUP_ROUTE, group);
+      route = io.netty.buffer.PooledByteBufAllocator.DEFAULT.directBuffer(length);
+      io.netifi.proteus.frames.RouteDestinationFlyweight.encodeRouteByGroup(route, io.netifi.proteus.frames.RouteType.STREAM_GROUP_ROUTE, accountId, group);
+    }
+
+    int length = io.netifi.proteus.frames.RoutingFlyweight.computeLength(true, false, true, fromDestination, route);
+    final io.netty.buffer.ByteBuf metadata = io.netty.buffer.PooledByteBufAllocator.DEFAULT.directBuffer(length);
+    reactor.core.publisher.Flux<io.netifi.testing.integration.Test.StreamingInputCallRequest> publisher = reactor.core.publisher.Flux.from(messages);
+    return rSocket.requestChannel(publisher.map(new java.util.function.Function<com.google.protobuf.MessageLite, io.rsocket.Payload>() {
+      @java.lang.Override
+      public io.rsocket.Payload apply(com.google.protobuf.MessageLite message) {
+        java.nio.ByteBuffer data = message.toByteString().asReadOnlyByteBuffer();
+        int requestToken = sessionUtil.generateRequestToken(currentSessionToken.get(), data, currentSessionCounter.incrementAndGet());
+        io.netifi.proteus.frames.RoutingFlyweight.encode(
+            metadata,
+            true,
+            true,
+            false,
+            requestToken,
+            fromAccountId,
+            fromDestination,
+            0,
+            TestService.PACKAGE_ID,
+            TestService.SERVICE_ID,
+            TestService.METHOD_STREAMING_INPUT_CALL,
+            generator.nextId(),
+            route);
+
+        return new io.rsocket.util.PayloadImpl(data, metadata.nioBuffer());
+      }
+    })).map(deserializer(io.netifi.testing.integration.Test.StreamingInputCallResponse.parser())).single();
+  }
+
+  @java.lang.Override
+  public reactor.core.publisher.Flux<io.netifi.testing.integration.Test.StreamingOutputCallResponse> fullBidiCall(org.reactivestreams.Publisher<io.netifi.testing.integration.Test.StreamingOutputCallRequest> messages) {
+    final io.netty.buffer.ByteBuf route;
+    if (destination != null && !destination.isEmpty()) {
+      int length = io.netifi.proteus.frames.RouteDestinationFlyweight.computeLength(io.netifi.proteus.frames.RouteType.STREAM_ID_ROUTE, destination, group);
+      route = io.netty.buffer.PooledByteBufAllocator.DEFAULT.directBuffer(length);
+      io.netifi.proteus.frames.RouteDestinationFlyweight.encodeRouteByDestination(route, io.netifi.proteus.frames.RouteType.STREAM_ID_ROUTE, accountId, destination, group);
+    } else {
+      int length = io.netifi.proteus.frames.RouteDestinationFlyweight.computeLength(io.netifi.proteus.frames.RouteType.STREAM_GROUP_ROUTE, group);
+      route = io.netty.buffer.PooledByteBufAllocator.DEFAULT.directBuffer(length);
+      io.netifi.proteus.frames.RouteDestinationFlyweight.encodeRouteByGroup(route, io.netifi.proteus.frames.RouteType.STREAM_GROUP_ROUTE, accountId, group);
+    }
+
+    int length = io.netifi.proteus.frames.RoutingFlyweight.computeLength(true, false, true, fromDestination, route);
+    final io.netty.buffer.ByteBuf metadata = io.netty.buffer.PooledByteBufAllocator.DEFAULT.directBuffer(length);
+    reactor.core.publisher.Flux<io.netifi.testing.integration.Test.StreamingOutputCallRequest> publisher = reactor.core.publisher.Flux.from(messages);
+    return rSocket.requestChannel(publisher.map(new java.util.function.Function<com.google.protobuf.MessageLite, io.rsocket.Payload>() {
+      @java.lang.Override
+      public io.rsocket.Payload apply(com.google.protobuf.MessageLite message) {
+        java.nio.ByteBuffer data = message.toByteString().asReadOnlyByteBuffer();
+        int requestToken = sessionUtil.generateRequestToken(currentSessionToken.get(), data, currentSessionCounter.incrementAndGet());
+        io.netifi.proteus.frames.RoutingFlyweight.encode(
+            metadata,
+            true,
+            true,
+            false,
+            requestToken,
+            fromAccountId,
+            fromDestination,
+            0,
+            TestService.PACKAGE_ID,
+            TestService.SERVICE_ID,
+            TestService.METHOD_FULL_BIDI_CALL,
+            generator.nextId(),
+            route);
+
+        return new io.rsocket.util.PayloadImpl(data, metadata.nioBuffer());
+      }
+    })).map(deserializer(io.netifi.testing.integration.Test.StreamingOutputCallResponse.parser()));
+  }
+
+  @java.lang.Override
+  public reactor.core.publisher.Flux<io.netifi.testing.integration.Test.StreamingOutputCallResponse> halfBidiCall(org.reactivestreams.Publisher<io.netifi.testing.integration.Test.StreamingOutputCallRequest> messages) {
+    final io.netty.buffer.ByteBuf route;
+    if (destination != null && !destination.isEmpty()) {
+      int length = io.netifi.proteus.frames.RouteDestinationFlyweight.computeLength(io.netifi.proteus.frames.RouteType.STREAM_ID_ROUTE, destination, group);
+      route = io.netty.buffer.PooledByteBufAllocator.DEFAULT.directBuffer(length);
+      io.netifi.proteus.frames.RouteDestinationFlyweight.encodeRouteByDestination(route, io.netifi.proteus.frames.RouteType.STREAM_ID_ROUTE, accountId, destination, group);
+    } else {
+      int length = io.netifi.proteus.frames.RouteDestinationFlyweight.computeLength(io.netifi.proteus.frames.RouteType.STREAM_GROUP_ROUTE, group);
+      route = io.netty.buffer.PooledByteBufAllocator.DEFAULT.directBuffer(length);
+      io.netifi.proteus.frames.RouteDestinationFlyweight.encodeRouteByGroup(route, io.netifi.proteus.frames.RouteType.STREAM_GROUP_ROUTE, accountId, group);
+    }
+
+    int length = io.netifi.proteus.frames.RoutingFlyweight.computeLength(true, false, true, fromDestination, route);
+    final io.netty.buffer.ByteBuf metadata = io.netty.buffer.PooledByteBufAllocator.DEFAULT.directBuffer(length);
+    reactor.core.publisher.Flux<io.netifi.testing.integration.Test.StreamingOutputCallRequest> publisher = reactor.core.publisher.Flux.from(messages);
+    return rSocket.requestChannel(publisher.map(new java.util.function.Function<com.google.protobuf.MessageLite, io.rsocket.Payload>() {
+      @java.lang.Override
+      public io.rsocket.Payload apply(com.google.protobuf.MessageLite message) {
+        java.nio.ByteBuffer data = message.toByteString().asReadOnlyByteBuffer();
+        int requestToken = sessionUtil.generateRequestToken(currentSessionToken.get(), data, currentSessionCounter.incrementAndGet());
+        io.netifi.proteus.frames.RoutingFlyweight.encode(
+            metadata,
+            true,
+            true,
+            false,
+            requestToken,
+            fromAccountId,
+            fromDestination,
+            0,
+            TestService.PACKAGE_ID,
+            TestService.SERVICE_ID,
+            TestService.METHOD_HALF_BIDI_CALL,
+            generator.nextId(),
+            route);
+
+        return new io.rsocket.util.PayloadImpl(data, metadata.nioBuffer());
+      }
+    })).map(deserializer(io.netifi.testing.integration.Test.StreamingOutputCallResponse.parser()));
+  }
+
+  @java.lang.Override
+  public double availability() {
+    return rSocket.availability();
+  }
+
+  @java.lang.Override
+  public reactor.core.publisher.Mono<Void> close() {
+    return rSocket.close();
+  }
+
+  @java.lang.Override
+  public reactor.core.publisher.Mono<Void> onClose() {
+    return rSocket.onClose();
+  }
+
+  private static <T> java.util.function.Function<io.rsocket.Payload, T> deserializer(final com.google.protobuf.Parser<T> parser) {
+    return new java.util.function.Function<io.rsocket.Payload, T>() {
+      @java.lang.Override
+      public T apply(io.rsocket.Payload payload) {
+        try {
+          com.google.protobuf.ByteString data = com.google.protobuf.UnsafeByteOperations.unsafeWrap(payload.getData());
+          return parser.parseFrom(data);
+        } catch (Throwable t) {
+          throw new RuntimeException(t);
+        }
+      }
+    };
+  }
+}

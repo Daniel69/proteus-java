@@ -1,0 +1,15 @@
+rootProject.name = "proteus"
+include ":proteus-core"
+include ":proteus-testing"
+include ":proteus-testing-proto"
+
+project(':proteus-core').projectDir = "$rootDir/core" as File
+project(':proteus-testing').projectDir = "$rootDir/testing" as File
+project(':proteus-testing-proto').projectDir = "$rootDir/testing-proto" as File
+
+if (settings.hasProperty('skipCodegen') && skipCodegen.toBoolean()) {
+  println '*** Skipping the build of codegen and compilation of proto files because skipCodegen=true'
+} else {
+  include ":proteus-compiler"
+  project(':proteus-compiler').projectDir = "$rootDir/compiler" as File
+}

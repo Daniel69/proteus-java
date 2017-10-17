@@ -1,0 +1,271 @@
+apply plugin: "cpp"
+apply plugin: "com.google.protobuf"
+
+description = 'The protoc plugin for Proteus Java'
+
+buildscript {
+    repositories {
+        mavenCentral()
+        mavenLocal()
+    }
+    dependencies {
+        classpath libraries.protobuf_plugin
+    }
+}
+
+def artifactStagingPath = "$buildDir/artifacts" as File
+// Adds space-delimited arguments from the environment variable env to the
+// argList.
+def addEnvArgs = { env, argList ->
+  def value = System.getenv(env)
+  if (value != null) {
+    value.split(' +').each() { it -> argList.add(it) }
+  }
+}
+
+// Adds corresponding "-l" option to the argList if libName is not found in
+// LDFLAGS. This is only used for Mac because when building for uploadArchives
+// artifacts, we add the ".a" files directly to LDFLAGS and without "-l" in
+// order to get statically linked, otherwise we add the libraries through "-l"
+// so that they can be searched for in default search paths.
+def addLibraryIfNotLinked = { libName, argList ->
+  def ldflags = System.env.LDFLAGS
+  if (ldflags == null || !ldflags.contains('lib' + libName + '.a')) {
+    argList.add('-l' + libName)
+  }
+}
+
+def String arch = rootProject.hasProperty('targetArch') ? rootProject.targetArch : osdetector.arch
+def boolean vcDisable = rootProject.hasProperty('vcDisable') ? rootProject.vcDisable : false
+
+model {
+  toolChains {
+    // If you have both VC and Gcc installed, VC will be selected, unless you
+    // set 'vcDisable=true'
+    if (!vcDisable) {
+      visualCpp(VisualCpp) {
+      }
+    }
+    gcc(Gcc) {
+      target("ppcle_64")
+    }
+    clang(Clang) {
+    }
+  }
+
+  platforms {
+    x86_32 {
+      architecture "x86"
+    }
+    x86_64 {
+      architecture "x86_64"
+    }
+    ppcle_64 {
+      architecture "ppcle_64"
+    }
+  }
+
+  components {
+    java_plugin(NativeExecutableSpec) {
+      if (arch in ['x86_32', 'x86_64', 'ppcle_64']) {
+        // If arch is not within the defined platforms, we do not specify the
+        // targetPlatform so that Gradle will choose what is appropriate.
+        targetPlatform arch
+      }
+      baseName "$protocPluginBaseName"
+    }
+  }
+
+  binaries {
+    all {
+      if (toolChain in Gcc || toolChain in Clang) {
+        cppCompiler.define("PROTEUS_VERSION", version)
+        cppCompiler.args "--std=c++0x"
+        addEnvArgs("CXXFLAGS", cppCompiler.args)
+        addEnvArgs("CPPFLAGS", cppCompiler.args)
+        if (osdetector.os == "osx") {
+          cppCompiler.args "-mmacosx-version-min=10.7", "-stdlib=libc++"
+          addLibraryIfNotLinked('protoc', linker.args)
+          addLibraryIfNotLinked('protobuf', linker.args)
+        } else if (osdetector.os == "windows") {
+          linker.args "-static", "-lprotoc", "-lprotobuf", "-static-libgcc", "-static-libstdc++",
+                      "-s"
+        } else {
+          // Link protoc, protobuf, libgcc and libstdc++ statically.
+          // Link other (system) libraries dynamically.
+          // Clang under OSX doesn't support these options.
+          linker.args "-Wl,-Bstatic", "-lprotoc", "-lprotobuf", "-static-libgcc",
+                      "-static-libstdc++",
+                      "-Wl,-Bdynamic", "-lpthread", "-s"
+        }
+        addEnvArgs("LDFLAGS", linker.args)
+      } else if (toolChain in VisualCpp) {
+        cppCompiler.define("PROTEUS_VERSION", version)
+        cppCompiler.args "/EHsc", "/MT"
+        if (rootProject.hasProperty('vcProtobufInclude')) {
+          cppCompiler.args "/I${rootProject.vcProtobufInclude}"
+        }
+        linker.args "libprotobuf.lib", "libprotoc.lib"
+        if (rootProject.hasProperty('vcProtobufLibs')) {
+          linker.args "/LIBPATH:${rootProject.vcProtobufLibs}"
+        }
+      }
+    }
+  }
+}
+
+configurations {
+  testLiteCompile
+}
+
+dependencies {
+  testCompile project(':proteus-core'),
+              libraries.protobuf
+  testLiteCompile project(':proteus-core'),
+                  libraries.protobuf_lite
+}
+
+sourceSets {
+  testLite {
+    proto {
+      setSrcDirs(['src/test/proto'])
+    }
+  }
+}
+
+compileTestJava {
+  //sourceCompatibility = 1.8
+  //targetCompatibility = 1.8
+
+  options.compilerArgs += ["-Xlint:-cast", "-Xep:MissingOverride:OFF",
+      "-Xep:ReferenceEquality:OFF", "-Xep:FunctionalInterfaceClash:OFF"]
+}
+
+compileTestLiteJava {
+  //sourceCompatibility = 1.8
+  //targetCompatibility = 1.8
+
+  // Protobuf-generated Lite produces quite a few warnings.
+  options.compilerArgs += ["-Xlint:-rawtypes", "-Xlint:-unchecked",
+      "-Xep:MissingOverride:OFF", "-Xep:ReferenceEquality:OFF",
+      "-Xep:FallThrough:OFF"]
+}
+
+protobuf {
+  protoc {
+    if (project.hasProperty('protoc')) {
+      path = project.protoc
+    } else {
+      artifact = "com.google.protobuf:protoc:${protocVersion}"
+    }
+  }
+  plugins {
+    javalite {
+      if (project.hasProperty('protoc-gen-javalite')) {
+        path = project['protoc-gen-javalite']
+      } else {
+        artifact = libraries.protoc_lite
+      }
+    }
+    proteus {
+      path = javaPluginPath
+    }
+  }
+  generateProtoTasks {
+    all().each { task ->
+      task.dependsOn 'java_pluginExecutable'
+      task.inputs.file javaPluginPath
+    }
+    ofSourceSet('test')*.plugins {
+      proteus {}
+    }
+    ofSourceSet('testLite')*.each { task ->
+      task.builtins {
+        remove java
+      }
+      task.plugins {
+        javalite {}
+        proteus {
+          option 'lite'
+        }
+      }
+    }
+  }
+}
+
+task buildArtifacts(type: Copy) {
+  dependsOn 'java_pluginExecutable'
+  from("$buildDir/exe") {
+    if (osdetector.os != 'windows') {
+      rename 'proteus-java', '$0.exe'
+    }
+  }
+  into artifactStagingPath
+}
+
+archivesBaseName = "$protocPluginBaseName"
+
+artifacts {
+  archives("$artifactStagingPath/java_plugin/${protocPluginBaseName}.exe" as File) {
+    classifier osdetector.os + "-" + arch
+    type "exe"
+    extension "exe"
+    builtBy buildArtifacts
+  }
+}
+
+// Exe files are skipped by Maven by default. Override it.
+// Also skip jar files that is generated by the java plugin.
+[
+  install.repositories.mavenInstaller,
+  uploadArchives.repositories.mavenDeployer,
+]*.setFilter {artifact, file ->
+  ! (file.getName().endsWith('jar') || file.getName().endsWith('jar.asc'))
+}
+
+[
+  uploadArchives.repositories.mavenDeployer,
+]*.beforeDeployment {
+  def ret = exec {
+    executable 'bash'
+    args 'check-artifact.sh', osdetector.os, arch
+  }
+  if (ret.exitValue != 0) {
+    throw new GradleException("check-artifact.sh exited with " + ret.exitValue)
+  }
+}
+
+[
+  install.repositories.mavenInstaller,
+  uploadArchives.repositories.mavenDeployer,
+]*.pom*.whenConfigured { pom ->
+  pom.project {
+    // This isn't any sort of Java archive artifact, and OSSRH doesn't enforce
+    // javadoc for 'pom' packages. 'exe' would be a more appropriate packaging
+    // value, but it isn't clear how that will be interpreted. In addition,
+    // 'pom' is typically the value used when building an exe with Maven.
+    packaging = "pom"
+  }
+}
+
+def configureTestTask(Task task, String dep, String suffix) {
+  test.dependsOn task
+  task.dependsOn "generateTest${dep}Proto"
+  if (osdetector.os != 'windows') {
+    task.executable "diff"
+    task.args "-u"
+  } else {
+    task.executable "fc"
+  }
+  // File isn't found on Windows if last slash is forward-slash
+  def slash = System.getProperty("file.separator")
+  task.args "$buildDir/generated/source/proto/test${dep}/proteus/io/netifi/testing/integration${slash}TestService${suffix}.java",
+       "$projectDir/src/test${dep}/golden/TestService${suffix}.java.txt"
+}
+
+task testGolden(type: Exec)
+task testClientGolden(type: Exec)
+task testLiteGolden(type: Exec)
+configureTestTask(testGolden, '', '')
+configureTestTask(testClientGolden, '', 'Client')
+configureTestTask(testLiteGolden, 'Lite', '')
