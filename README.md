@@ -1,5 +1,5 @@
 # proteus-java
-A fast, and easy [RSocket](http://rsocket.io/) based RPC layer.
+A fast, and easy [RSocket](http://rsocket.io/)-based RPC layer.
 
 ## Building Proteus
 ### Prerequisites
