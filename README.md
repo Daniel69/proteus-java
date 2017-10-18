@@ -1,5 +1,5 @@
 # proteus-java
-An easy to use reactive RPC layer on top of the RSocket protocol.
+A fast, and easy RSocket based RPC layer.
 
 ## Bugs and Feedback
 
