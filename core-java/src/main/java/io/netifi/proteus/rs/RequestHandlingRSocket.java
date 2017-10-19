@@ -3,7 +3,7 @@ package io.netifi.proteus.rs;
 import io.netifi.proteus.ProteusService;
 import io.netifi.proteus.collections.BiInt2ObjectMap;
 import io.netifi.proteus.exception.ServiceNotFound;
-import io.netifi.proteus.frames.ProteusMetadataFlyweight;
+import io.netifi.proteus.frames.ProteusMetadata;
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.Unpooled;
 import io.rsocket.Payload;
@@ -34,8 +34,8 @@ public class RequestHandlingRSocket implements RSocket {
   public Mono<Void> fireAndForget(Payload payload) {
     try {
       ByteBuf metadata = Unpooled.wrappedBuffer(payload.getMetadata());
-      int packageId = ProteusMetadataFlyweight.namespaceId(metadata);
-      int serviceId = ProteusMetadataFlyweight.serviceId(metadata);
+      int packageId = ProteusMetadata.namespaceId(metadata);
+      int serviceId = ProteusMetadata.serviceId(metadata);
 
       ProteusService proteusService = registeredServices.get(packageId, serviceId);
 
@@ -54,8 +54,8 @@ public class RequestHandlingRSocket implements RSocket {
   public Mono<Payload> requestResponse(Payload payload) {
     try {
       ByteBuf metadata = Unpooled.wrappedBuffer(payload.getMetadata());
-      int packageId = ProteusMetadataFlyweight.namespaceId(metadata);
-      int serviceId = ProteusMetadataFlyweight.serviceId(metadata);
+      int packageId = ProteusMetadata.namespaceId(metadata);
+      int serviceId = ProteusMetadata.serviceId(metadata);
 
       ProteusService proteusService = registeredServices.get(packageId, serviceId);
 
@@ -74,8 +74,8 @@ public class RequestHandlingRSocket implements RSocket {
   public Flux<Payload> requestStream(Payload payload) {
     try {
       ByteBuf metadata = Unpooled.wrappedBuffer(payload.getMetadata());
-      int packageId = ProteusMetadataFlyweight.namespaceId(metadata);
-      int serviceId = ProteusMetadataFlyweight.serviceId(metadata);
+      int packageId = ProteusMetadata.namespaceId(metadata);
+      int serviceId = ProteusMetadata.serviceId(metadata);
 
       ProteusService proteusService = registeredServices.get(packageId, serviceId);
 
@@ -100,8 +100,8 @@ public class RequestHandlingRSocket implements RSocket {
                 @Override
                 public Publisher<Payload> apply(Payload payload) {
                   ByteBuf metadata = Unpooled.wrappedBuffer(payload.getMetadata());
-                  int packageId = ProteusMetadataFlyweight.namespaceId(metadata);
-                  int serviceId = ProteusMetadataFlyweight.serviceId(metadata);
+                  int packageId = ProteusMetadata.namespaceId(metadata);
+                  int serviceId = ProteusMetadata.serviceId(metadata);
                   ProteusService proteusService = registeredServices.get(packageId, serviceId);
 
                   return proteusService.requestChannel(payloads);
@@ -117,8 +117,8 @@ public class RequestHandlingRSocket implements RSocket {
   public Mono<Void> metadataPush(Payload payload) {
     try {
       ByteBuf metadata = Unpooled.wrappedBuffer(payload.getMetadata());
-      int packageId = ProteusMetadataFlyweight.namespaceId(metadata);
-      int serviceId = ProteusMetadataFlyweight.serviceId(metadata);
+      int packageId = ProteusMetadata.namespaceId(metadata);
+      int serviceId = ProteusMetadata.serviceId(metadata);
 
       ProteusService proteusService = registeredServices.get(packageId, serviceId);
 
