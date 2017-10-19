@@ -11,7 +11,7 @@ public final class SimpleServiceServer implements io.netifi.proteus.ProteusServi
   }
 
   @java.lang.Override
-  public int getPackageId() {
+  public int getNamespaceId() {
     return SimpleService.PACKAGE_ID;
   }
 

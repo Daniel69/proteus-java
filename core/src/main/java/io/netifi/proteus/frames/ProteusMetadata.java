@@ -30,7 +30,7 @@ public class ProteusMetadata {
       return offset;
   }
 
-  public static int verion(ByteBuf byteBuf) {
+  public static int version(ByteBuf byteBuf) {
     return toUnsignedInt(byteBuf.getShort(0));
   }
 

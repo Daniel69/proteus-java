@@ -24,9 +24,9 @@ public class RequestHandlingRSocket implements RSocket {
     this.registeredServices = new BiInt2ObjectMap<ProteusService>();
 
     for (ProteusService proteusService : services) {
-      int packageId = proteusService.getPackageId();
+      int namespaceId = proteusService.getNamespaceId();
       int serviceId = proteusService.getServiceId();
-      registeredServices.put(packageId, serviceId, proteusService);
+      registeredServices.put(namespaceId, serviceId, proteusService);
     }
   }
 
@@ -34,13 +34,13 @@ public class RequestHandlingRSocket implements RSocket {
   public Mono<Void> fireAndForget(Payload payload) {
     try {
       ByteBuf metadata = Unpooled.wrappedBuffer(payload.getMetadata());
-      int packageId = ProteusMetadata.namespaceId(metadata);
+      int namespaceId = ProteusMetadata.namespaceId(metadata);
       int serviceId = ProteusMetadata.serviceId(metadata);
 
-      ProteusService proteusService = registeredServices.get(packageId, serviceId);
+      ProteusService proteusService = registeredServices.get(namespaceId, serviceId);
 
       if (proteusService == null) {
-        return Mono.error(new ServiceNotFound(packageId, serviceId));
+        return Mono.error(new ServiceNotFound(namespaceId, serviceId));
       }
 
       return proteusService.fireAndForget(payload);
@@ -54,13 +54,13 @@ public class RequestHandlingRSocket implements RSocket {
   public Mono<Payload> requestResponse(Payload payload) {
     try {
       ByteBuf metadata = Unpooled.wrappedBuffer(payload.getMetadata());
-      int packageId = ProteusMetadata.namespaceId(metadata);
+      int namespaceId = ProteusMetadata.namespaceId(metadata);
       int serviceId = ProteusMetadata.serviceId(metadata);
 
-      ProteusService proteusService = registeredServices.get(packageId, serviceId);
+      ProteusService proteusService = registeredServices.get(namespaceId, serviceId);
 
       if (proteusService == null) {
-        return Mono.error(new ServiceNotFound(packageId, serviceId));
+        return Mono.error(new ServiceNotFound(namespaceId, serviceId));
       }
 
       return proteusService.requestResponse(payload);
@@ -74,13 +74,13 @@ public class RequestHandlingRSocket implements RSocket {
   public Flux<Payload> requestStream(Payload payload) {
     try {
       ByteBuf metadata = Unpooled.wrappedBuffer(payload.getMetadata());
-      int packageId = ProteusMetadata.namespaceId(metadata);
+      int namespaceId = ProteusMetadata.namespaceId(metadata);
       int serviceId = ProteusMetadata.serviceId(metadata);
 
-      ProteusService proteusService = registeredServices.get(packageId, serviceId);
+      ProteusService proteusService = registeredServices.get(namespaceId, serviceId);
 
       if (proteusService == null) {
-        return Flux.error(new ServiceNotFound(packageId, serviceId));
+        return Flux.error(new ServiceNotFound(namespaceId, serviceId));
       }
 
       return proteusService.requestStream(payload);
@@ -100,9 +100,9 @@ public class RequestHandlingRSocket implements RSocket {
                 @Override
                 public Publisher<Payload> apply(Payload payload) {
                   ByteBuf metadata = Unpooled.wrappedBuffer(payload.getMetadata());
-                  int packageId = ProteusMetadata.namespaceId(metadata);
+                  int namespaceId = ProteusMetadata.namespaceId(metadata);
                   int serviceId = ProteusMetadata.serviceId(metadata);
-                  ProteusService proteusService = registeredServices.get(packageId, serviceId);
+                  ProteusService proteusService = registeredServices.get(namespaceId, serviceId);
 
                   return proteusService.requestChannel(payloads);
                 }
@@ -117,13 +117,13 @@ public class RequestHandlingRSocket implements RSocket {
   public Mono<Void> metadataPush(Payload payload) {
     try {
       ByteBuf metadata = Unpooled.wrappedBuffer(payload.getMetadata());
-      int packageId = ProteusMetadata.namespaceId(metadata);
+      int namespaceId = ProteusMetadata.namespaceId(metadata);
       int serviceId = ProteusMetadata.serviceId(metadata);
 
-      ProteusService proteusService = registeredServices.get(packageId, serviceId);
+      ProteusService proteusService = registeredServices.get(namespaceId, serviceId);
 
       if (proteusService == null) {
-        return Mono.error(new ServiceNotFound(packageId, serviceId));
+        return Mono.error(new ServiceNotFound(namespaceId, serviceId));
       }
 
       return proteusService.metadataPush(payload);
