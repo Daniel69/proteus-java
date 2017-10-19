@@ -1,14 +1,9 @@
 package io.netifi.testing.integration;
 
-/**
- * <pre>
- * Test service that supports all call types.
- * </pre>
- */
 @javax.annotation.Generated(
     value = "by Proteus proto compiler (version 0.1.0-SNAPSHOT)",
     comments = "Source: test.proto")
-public final class TestServiceServer implements io.rsocket.RSocket {
+public final class TestServiceServer implements io.netifi.proteus.ProteusService {
   private final TestService service;
 
   public TestServiceServer(TestService service) {
@@ -16,10 +11,20 @@ public final class TestServiceServer implements io.rsocket.RSocket {
   }
 
   @java.lang.Override
+  public int getPackageId() {
+    return TestService.PACKAGE_ID;
+  }
+
+  @java.lang.Override
+  public int getServiceId() {
+    return TestService.SERVICE_ID;
+  }
+
+  @java.lang.Override
   public reactor.core.publisher.Mono<Void> fireAndForget(io.rsocket.Payload payload) {
     try {
       io.netty.buffer.ByteBuf metadata = io.netty.buffer.Unpooled.wrappedBuffer(payload.getMetadata());
-      switch(io.netifi.proteus.frames.RoutingFlyweight.methodId(metadata)) {
+      switch(io.netifi.proteus.frames.ProteusMetadata.methodId(metadata)) {
         case TestService.METHOD_EMPTY_CALL: {
           com.google.protobuf.ByteString data = com.google.protobuf.UnsafeByteOperations.unsafeWrap(payload.getData());
           return service.emptyCall(io.netifi.testing.integration.Test.SimpleRequest.parseFrom(data));
@@ -37,7 +42,7 @@ public final class TestServiceServer implements io.rsocket.RSocket {
   public reactor.core.publisher.Mono<io.rsocket.Payload> requestResponse(io.rsocket.Payload payload) {
     try {
       io.netty.buffer.ByteBuf metadata = io.netty.buffer.Unpooled.wrappedBuffer(payload.getMetadata());
-      switch(io.netifi.proteus.frames.RoutingFlyweight.methodId(metadata)) {
+      switch(io.netifi.proteus.frames.ProteusMetadata.methodId(metadata)) {
         case TestService.METHOD_UNARY_CALL: {
           com.google.protobuf.ByteString data = com.google.protobuf.UnsafeByteOperations.unsafeWrap(payload.getData());
           return service.unaryCall(io.netifi.testing.integration.Test.SimpleRequest.parseFrom(data)).map(serializer);
@@ -55,7 +60,7 @@ public final class TestServiceServer implements io.rsocket.RSocket {
   public reactor.core.publisher.Flux<io.rsocket.Payload> requestStream(io.rsocket.Payload payload) {
     try {
       io.netty.buffer.ByteBuf metadata = io.netty.buffer.Unpooled.wrappedBuffer(payload.getMetadata());
-      switch(io.netifi.proteus.frames.RoutingFlyweight.methodId(metadata)) {
+      switch(io.netifi.proteus.frames.ProteusMetadata.methodId(metadata)) {
         case TestService.METHOD_STREAMING_OUTPUT_CALL: {
           com.google.protobuf.ByteString data = com.google.protobuf.UnsafeByteOperations.unsafeWrap(payload.getData());
           return service.streamingOutputCall(io.netifi.testing.integration.Test.StreamingOutputCallRequest.parseFrom(data)).map(serializer);
@@ -77,7 +82,7 @@ public final class TestServiceServer implements io.rsocket.RSocket {
       public org.reactivestreams.Publisher<? extends com.google.protobuf.MessageLite> apply(io.rsocket.Payload payload) {
         try {
           io.netty.buffer.ByteBuf metadata = io.netty.buffer.Unpooled.wrappedBuffer(payload.getMetadata());
-          switch(io.netifi.proteus.frames.RoutingFlyweight.methodId(metadata)) {
+          switch(io.netifi.proteus.frames.ProteusMetadata.methodId(metadata)) {
             case TestService.METHOD_STREAMING_INPUT_CALL: {
               reactor.core.publisher.Flux<io.netifi.testing.integration.Test.StreamingInputCallRequest> messages =
                 publisher.map(deserializer(io.netifi.testing.integration.Test.StreamingInputCallRequest.parser()));

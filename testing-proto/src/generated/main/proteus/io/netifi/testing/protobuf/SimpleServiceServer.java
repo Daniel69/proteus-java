@@ -3,11 +3,21 @@ package io.netifi.testing.protobuf;
 @javax.annotation.Generated(
     value = "by Proteus proto compiler",
     comments = "Source: io/netifi/testing/protobuf/simpleservice.proto")
-public final class SimpleServiceServer implements io.rsocket.RSocket {
+public final class SimpleServiceServer implements io.netifi.proteus.ProteusService {
   private final SimpleService service;
 
   public SimpleServiceServer(SimpleService service) {
     this.service = service;
+  }
+
+  @java.lang.Override
+  public int getPackageId() {
+    return SimpleService.PACKAGE_ID;
+  }
+
+  @java.lang.Override
+  public int getServiceId() {
+    return SimpleService.SERVICE_ID;
   }
 
   @java.lang.Override
@@ -19,7 +29,7 @@ public final class SimpleServiceServer implements io.rsocket.RSocket {
   public reactor.core.publisher.Mono<io.rsocket.Payload> requestResponse(io.rsocket.Payload payload) {
     try {
       io.netty.buffer.ByteBuf metadata = io.netty.buffer.Unpooled.wrappedBuffer(payload.getMetadata());
-      switch(io.netifi.proteus.frames.ProteusMetadataFlyweight.methodId(metadata)) {
+      switch(io.netifi.proteus.frames.ProteusMetadata.methodId(metadata)) {
         case SimpleService.METHOD_UNARY_RPC: {
           com.google.protobuf.ByteString data = com.google.protobuf.UnsafeByteOperations.unsafeWrap(payload.getData());
           return service.unaryRpc(io.netifi.testing.protobuf.SimpleRequest.parseFrom(data)).map(serializer);
@@ -37,7 +47,7 @@ public final class SimpleServiceServer implements io.rsocket.RSocket {
   public reactor.core.publisher.Flux<io.rsocket.Payload> requestStream(io.rsocket.Payload payload) {
     try {
       io.netty.buffer.ByteBuf metadata = io.netty.buffer.Unpooled.wrappedBuffer(payload.getMetadata());
-      switch(io.netifi.proteus.frames.ProteusMetadataFlyweight.methodId(metadata)) {
+      switch(io.netifi.proteus.frames.ProteusMetadata.methodId(metadata)) {
         case SimpleService.METHOD_SERVER_STREAMING_RPC: {
           com.google.protobuf.ByteString data = com.google.protobuf.UnsafeByteOperations.unsafeWrap(payload.getData());
           return service.serverStreamingRpc(io.netifi.testing.protobuf.SimpleRequest.parseFrom(data)).map(serializer);
@@ -59,7 +69,7 @@ public final class SimpleServiceServer implements io.rsocket.RSocket {
       public org.reactivestreams.Publisher<? extends com.google.protobuf.MessageLite> apply(io.rsocket.Payload payload) {
         try {
           io.netty.buffer.ByteBuf metadata = io.netty.buffer.Unpooled.wrappedBuffer(payload.getMetadata());
-          switch(io.netifi.proteus.frames.ProteusMetadataFlyweight.methodId(metadata)) {
+          switch(io.netifi.proteus.frames.ProteusMetadata.methodId(metadata)) {
             case SimpleService.METHOD_CLIENT_STREAMING_RPC: {
               reactor.core.publisher.Flux<io.netifi.testing.protobuf.SimpleRequest> messages =
                 publisher.map(deserializer(io.netifi.testing.protobuf.SimpleRequest.parser()));

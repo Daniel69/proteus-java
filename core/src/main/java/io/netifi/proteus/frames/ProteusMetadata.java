@@ -2,31 +2,31 @@ package io.netifi.proteus.frames;
 
 import io.netty.buffer.ByteBuf;
 
-public class ProteusMetadataFlyweight {
-  private static final int VERSION = 2;
-  private static final int NAMESPACE_ID_SIZE = 4;
+public class ProteusMetadata {
+  private static final int VERSION_SIZE = 2;
+  private static final int PACKAGE_ID_SIZE = 4;
   private static final int SERVICE_ID_SIZE = 4;
   private static final int METHOD_ID_SIZE = 4;
 
   public static int computeLength() {
-    return VERSION + NAMESPACE_ID_SIZE + SERVICE_ID_SIZE + METHOD_ID_SIZE;
+    return VERSION_SIZE + PACKAGE_ID_SIZE + SERVICE_ID_SIZE + METHOD_ID_SIZE;
   }
-  
+
   public static int encode(ByteBuf byteBuf, int namespaceId, int serviceId, int methodId) {
       int offset = 0;
-      
+
       byteBuf.setShort(offset, 1);
-      offset += VERSION;
-      
+      offset += VERSION_SIZE;
+
       byteBuf.setInt(offset, namespaceId);
-      offset += NAMESPACE_ID_SIZE;
-      
+      offset += PACKAGE_ID_SIZE;
+
       byteBuf.setInt(offset, serviceId);
       offset += SERVICE_ID_SIZE;
-      
+
       byteBuf.setInt(offset, methodId);
       offset += METHOD_ID_SIZE;
-      
+
       return offset;
   }
 
@@ -35,17 +35,17 @@ public class ProteusMetadataFlyweight {
   }
 
   public static int namespaceId(ByteBuf byteBuf) {
-    int offset = VERSION;
+    int offset = VERSION_SIZE;
     return byteBuf.getInt(offset);
   }
 
-  public static int serviceId(ByteBuf byteBuf) {
-    int offset = VERSION + NAMESPACE_ID_SIZE;
+  public static int packageId(ByteBuf byteBuf) {
+    int offset = VERSION_SIZE + PACKAGE_ID_SIZE;
     return byteBuf.getInt(offset);
   }
 
   public static int methodId(ByteBuf byteBuf) {
-    int offset = VERSION + NAMESPACE_ID_SIZE + SERVICE_ID_SIZE;
+    int offset = VERSION_SIZE + PACKAGE_ID_SIZE + SERVICE_ID_SIZE;
     return byteBuf.getInt(offset);
   }
 

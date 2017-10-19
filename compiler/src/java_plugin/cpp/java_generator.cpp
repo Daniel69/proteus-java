@@ -407,44 +407,12 @@ static void PrintClient(const ServiceDescriptor* service,
 
   p->Print(
       *vars,
-      "private final $RSocket$ rSocket;\n"
-      "private final long accountId, fromAccountId;\n"
-      "private final String group, fromGroup;\n"
-      "private final String destination, fromDestination;\n\n"
-      "private final $TimebasedIdGenerator$ generator;\n"
-      "private final $SessionUtil$ sessionUtil;\n"
-      "private final $AtomicLong$ currentSessionCounter;\n"
-      "private final $AtomicReference$<byte[]> currentSessionToken;\n\n"
-      "public $client_class_name$(\n");
-  p->Indent();
+      "private final $RSocket$ rSocket;\n\n"
+      "public $client_class_name$($RSocket$ rSocket) {\n");
   p->Indent();
   p->Print(
       *vars,
-      "$RSocket$ rSocket,\n"
-      "long accountId,\n"
-      "String group,\n"
-      "String destination,\n"
-      "long fromAccountId,\n"
-      "String fromGroup,\n"
-      "String fromDestination,\n"
-      "$TimebasedIdGenerator$ generator,\n"
-      "$SessionUtil$ sessionUtil,\n"
-      "$AtomicLong$ currentSessionCounter,\n"
-      "$AtomicReference$<byte[]> currentSessionToken) {\n");
-  p->Outdent();
-  p->Print(
-      *vars,
-      "this.rSocket = rSocket;\n"
-      "this.accountId = accountId;\n"
-      "this.group = group;\n"
-      "this.destination = destination;\n"
-      "this.fromAccountId = fromAccountId;\n"
-      "this.fromGroup = fromGroup;\n"
-      "this.fromDestination = fromDestination;\n"
-      "this.generator = generator;\n"
-      "this.sessionUtil = sessionUtil;\n"
-      "this.currentSessionCounter = currentSessionCounter;\n"
-      "this.currentSessionToken = currentSessionToken;\n");
+      "this.rSocket = rSocket;\n");
   p->Outdent();
   p->Print("}\n\n");
 
@@ -491,28 +459,9 @@ static void PrintClient(const ServiceDescriptor* service,
       p->Indent();
       p->Print(
           *vars,
-          "final $ByteBuf$ route;\n"
-          "if (destination != null && !destination.isEmpty()) {\n");
-      p->Indent();
-      p->Print(
-          *vars,
-          "int length = $RouteDestinationFlyweight$.computeLength($RouteType$.STREAM_ID_ROUTE, destination, group);\n"
-          "route = $PooledByteBufAllocator$.DEFAULT.directBuffer(length);\n"
-          "$RouteDestinationFlyweight$.encodeRouteByDestination(route, $RouteType$.STREAM_ID_ROUTE, accountId, destination, group);\n");
-      p->Outdent();
-      p->Print("} else {\n");
-      p->Indent();
-      p->Print(
-          *vars,
-          "int length = $RouteDestinationFlyweight$.computeLength($RouteType$.STREAM_GROUP_ROUTE, group);\n"
-          "route = $PooledByteBufAllocator$.DEFAULT.directBuffer(length);\n"
-          "$RouteDestinationFlyweight$.encodeRouteByGroup(route, $RouteType$.STREAM_GROUP_ROUTE, accountId, group);\n");
-      p->Outdent();
-      p->Print("}\n\n");
-      p->Print(
-          *vars,
-          "int length = $RoutingFlyweight$.computeLength(true, false, true, fromDestination, route);\n"
-          "final $ByteBuf$ metadata = $PooledByteBufAllocator$.DEFAULT.directBuffer(length);\n"
+          "int length = $ProteusMetadata$.computeLength();\n"
+          "final $ByteBuf$ metadata = $ByteBufAllocator$.DEFAULT.directBuffer(length);\n"
+          "$ProteusMetadata$.encode(metadata, $service_name$.$package_id_name$, $service_name$.$service_id_name$, $service_name$.$method_id_name$);\n\n"
           "$Flux$<$input_type$> publisher = $Flux$.$from$(messages);\n"
           "return rSocket.requestChannel(publisher.map(new $Function$<$MessageLite$, $Payload$>() {\n");
       p->Indent();
@@ -524,29 +473,6 @@ static void PrintClient(const ServiceDescriptor* service,
       p->Print(
           *vars,
           "$ByteBuffer$ data = message.toByteString().asReadOnlyByteBuffer();\n"
-          "int requestToken = sessionUtil.generateRequestToken(currentSessionToken.get(), data, currentSessionCounter.incrementAndGet());\n"
-          "$RoutingFlyweight$.encode(\n");
-      p->Indent();
-      p->Indent();
-      p->Print(
-          *vars,
-          "metadata,\n"
-          "true,\n"
-          "true,\n"
-          "false,\n"
-          "requestToken,\n"
-          "fromAccountId,\n"
-          "fromDestination,\n"
-          "0,\n"
-          "$service_name$.$package_id_name$,\n"
-          "$service_name$.$service_id_name$,\n"
-          "$service_name$.$method_id_name$,\n"
-          "generator.nextId(),\n"
-          "route);\n\n");
-      p->Outdent();
-      p->Outdent();
-      p->Print(
-          *vars,
           "return new $PayloadImpl$(data, metadata.nioBuffer());\n");
       p->Outdent();
       p->Print("}\n");
@@ -570,50 +496,10 @@ static void PrintClient(const ServiceDescriptor* service,
       p->Indent();
       p->Print(
           *vars,
-          "$ByteBuf$ route;\n"
-          "if (destination != null && !destination.isEmpty()) {\n");
-      p->Indent();
-      p->Print(
-          *vars,
-          "int length = $RouteDestinationFlyweight$.computeLength($RouteType$.STREAM_ID_ROUTE, destination, group);\n"
-          "route = $PooledByteBufAllocator$.DEFAULT.directBuffer(length);\n"
-          "$RouteDestinationFlyweight$.encodeRouteByDestination(route, $RouteType$.STREAM_ID_ROUTE, accountId, destination, group);\n");
-      p->Outdent();
-      p->Print("} else {\n");
-      p->Indent();
-      p->Print(
-          *vars,
-          "int length = $RouteDestinationFlyweight$.computeLength($RouteType$.STREAM_GROUP_ROUTE, group);\n"
-          "route = $PooledByteBufAllocator$.DEFAULT.directBuffer(length);\n"
-          "$RouteDestinationFlyweight$.encodeRouteByGroup(route, $RouteType$.STREAM_GROUP_ROUTE, accountId, group);\n");
-      p->Outdent();
-      p->Print("}\n\n");
-      p->Print(
-          *vars,
-          "int length = $RoutingFlyweight$.computeLength(true, false, true, fromDestination, route);\n"
-          "$ByteBuf$ metadata = $PooledByteBufAllocator$.DEFAULT.directBuffer(length);\n"
-          "$ByteBuffer$ data = message.toByteString().asReadOnlyByteBuffer();\n"
-          "int requestToken = sessionUtil.generateRequestToken(currentSessionToken.get(), data, currentSessionCounter.incrementAndGet());\n"
-          "$RoutingFlyweight$.encode(\n");
-      p->Indent();
-      p->Indent();
-      p->Print(
-          *vars,
-          "metadata,\n"
-          "true,\n"
-          "true,\n"
-          "false,\n"
-          "requestToken,\n"
-          "fromAccountId,\n"
-          "fromDestination,\n"
-          "0,\n"
-          "$service_name$.$package_id_name$,\n"
-          "$service_name$.$service_id_name$,\n"
-          "$service_name$.$method_id_name$,\n"
-          "generator.nextId(),\n"
-          "route);\n\n");
-      p->Outdent();
-      p->Outdent();
+          "int length = $ProteusMetadata$.computeLength();\n"
+          "$ByteBuf$ metadata = $ByteBufAllocator$.DEFAULT.directBuffer(length);\n"
+          "$ProteusMetadata$.encode(metadata, $service_name$.$package_id_name$, $service_name$.$service_id_name$, $service_name$.$method_id_name$);\n"
+          "$ByteBuffer$ data = message.toByteString().asReadOnlyByteBuffer();\n\n");
 
       if (server_streaming) {
         p->Print(
@@ -728,6 +614,8 @@ static void PrintServer(const ServiceDescriptor* service,
                         ProtoFlavor flavor,
                         bool disable_version) {
   (*vars)["service_name"] = service->name();
+  (*vars)["package_id_name"] = PackageIdFieldName(service);
+  (*vars)["service_id_name"] = ServiceIdFieldName(service);
   (*vars)["file_name"] = service->file()->name();
   (*vars)["server_class_name"] = ServerClassName(service);
   (*vars)["proteus_version"] = "";
@@ -741,7 +629,7 @@ static void PrintServer(const ServiceDescriptor* service,
       "@$Generated$(\n"
       "    value = \"by Proteus proto compiler$proteus_version$\",\n"
       "    comments = \"Source: $file_name$\")\n"
-      "public final class $server_class_name$ implements $RSocket$ {\n");
+      "public final class $server_class_name$ implements $ProteusService$ {\n");
   p->Indent();
 
   p->Print(
@@ -752,6 +640,28 @@ static void PrintServer(const ServiceDescriptor* service,
   p->Print(
       *vars,
       "this.service = service;\n");
+  p->Outdent();
+  p->Print("}\n\n");
+
+  p->Print(
+      *vars,
+      "@$Override$\n"
+      "public int getPackageId() {\n");
+  p->Indent();
+  p->Print(
+      *vars,
+      "return $service_name$.$package_id_name$;\n");
+  p->Outdent();
+  p->Print("}\n\n");
+
+  p->Print(
+      *vars,
+      "@$Override$\n"
+      "public int getServiceId() {\n");
+  p->Indent();
+  p->Print(
+      *vars,
+      "return $service_name$.$service_id_name$;\n");
   p->Outdent();
   p->Print("}\n\n");
 
@@ -797,7 +707,7 @@ static void PrintServer(const ServiceDescriptor* service,
     p->Print(
         *vars,
         "$ByteBuf$ metadata = $Unpooled$.wrappedBuffer(payload.getMetadata());\n"
-        "switch($RoutingFlyweight$.methodId(metadata)) {\n");
+        "switch($ProteusMetadata$.methodId(metadata)) {\n");
     p->Indent();
     for (vector<const MethodDescriptor*>::iterator it = fire_and_forget.begin(); it != fire_and_forget.end(); ++it) {
       const MethodDescriptor* method = *it;
@@ -856,7 +766,7 @@ static void PrintServer(const ServiceDescriptor* service,
     p->Print(
         *vars,
         "$ByteBuf$ metadata = $Unpooled$.wrappedBuffer(payload.getMetadata());\n"
-        "switch($RoutingFlyweight$.methodId(metadata)) {\n");
+        "switch($ProteusMetadata$.methodId(metadata)) {\n");
     p->Indent();
     for (vector<const MethodDescriptor*>::iterator it = request_response.begin(); it != request_response.end(); ++it) {
       const MethodDescriptor* method = *it;
@@ -916,7 +826,7 @@ static void PrintServer(const ServiceDescriptor* service,
     p->Print(
         *vars,
         "$ByteBuf$ metadata = $Unpooled$.wrappedBuffer(payload.getMetadata());\n"
-        "switch($RoutingFlyweight$.methodId(metadata)) {\n");
+        "switch($ProteusMetadata$.methodId(metadata)) {\n");
     p->Indent();
     for (vector<const MethodDescriptor*>::iterator it = request_stream.begin(); it != request_stream.end(); ++it) {
       const MethodDescriptor* method = *it;
@@ -986,7 +896,7 @@ static void PrintServer(const ServiceDescriptor* service,
     p->Print(
         *vars,
         "$ByteBuf$ metadata = $Unpooled$.wrappedBuffer(payload.getMetadata());\n"
-        "switch($RoutingFlyweight$.methodId(metadata)) {\n");
+        "switch($ProteusMetadata$.methodId(metadata)) {\n");
     p->Indent();
     for (vector<const MethodDescriptor*>::iterator it = request_channel.begin(); it != request_channel.end(); ++it) {
       const MethodDescriptor* method = *it;
@@ -1199,15 +1109,9 @@ void GenerateClient(const ServiceDescriptor* service,
   vars["Payload"] = "io.rsocket.Payload";
   vars["PayloadImpl"] = "io.rsocket.util.PayloadImpl";
   vars["ByteBuf"] = "io.netty.buffer.ByteBuf";
-  vars["PooledByteBufAllocator"] = "io.netty.buffer.PooledByteBufAllocator";
+  vars["ByteBufAllocator"] = "io.netty.buffer.ByteBufAllocator";
   vars["ByteBuffer"] = "java.nio.ByteBuffer";
-  vars["RoutingFlyweight"] = "io.netifi.proteus.frames.RoutingFlyweight";
-  vars["RouteDestinationFlyweight"] = "io.netifi.proteus.frames.RouteDestinationFlyweight";
-  vars["RouteType"] = "io.netifi.proteus.frames.RouteType";
-  vars["SessionUtil"] = "io.netifi.proteus.auth.SessionUtil";
-  vars["TimebasedIdGenerator"] = "io.netifi.proteus.util.TimebasedIdGenerator";
-  vars["AtomicLong"] = "java.util.concurrent.atomic.AtomicLong";
-  vars["AtomicReference"] = "java.util.concurrent.atomic.AtomicReference";
+  vars["ProteusMetadata"] = "io.netifi.proteus.frames.ProteusMetadata";
   vars["ByteString"] = "com.google.protobuf.ByteString";
   vars["UnsafeByteOperations"] = "com.google.protobuf.UnsafeByteOperations";
   vars["MessageLite"] = "com.google.protobuf.MessageLite";
@@ -1248,7 +1152,8 @@ void GenerateServer(const ServiceDescriptor* service,
   vars["RSocket"] = "io.rsocket.RSocket";
   vars["Payload"] = "io.rsocket.Payload";
   vars["PayloadImpl"] = "io.rsocket.util.PayloadImpl";
-  vars["RoutingFlyweight"] = "io.netifi.proteus.frames.RoutingFlyweight";
+  vars["ProteusService"] = "io.netifi.proteus.ProteusService";
+  vars["ProteusMetadata"] = "io.netifi.proteus.frames.ProteusMetadata";
   vars["ByteBuf"] = "io.netty.buffer.ByteBuf";
   vars["Unpooled"] = "io.netty.buffer.Unpooled";
   vars["ByteString"] = "com.google.protobuf.ByteString";
