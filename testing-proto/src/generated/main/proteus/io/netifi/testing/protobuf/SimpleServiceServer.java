@@ -3,11 +3,21 @@ package io.netifi.testing.protobuf;
 @javax.annotation.Generated(
     value = "by Proteus proto compiler",
     comments = "Source: io/netifi/testing/protobuf/simpleservice.proto")
-public final class SimpleServiceServer implements io.rsocket.RSocket {
+public final class SimpleServiceServer implements io.netifi.proteus.ProteusService {
   private final SimpleService service;
 
   public SimpleServiceServer(SimpleService service) {
     this.service = service;
+  }
+
+  @java.lang.Override
+  public int getPackageId() {
+    return SimpleService.PACKAGE_ID;
+  }
+
+  @java.lang.Override
+  public int getServiceId() {
+    return SimpleService.SERVICE_ID;
   }
 
   @java.lang.Override

@@ -614,6 +614,8 @@ static void PrintServer(const ServiceDescriptor* service,
                         ProtoFlavor flavor,
                         bool disable_version) {
   (*vars)["service_name"] = service->name();
+  (*vars)["package_id_name"] = PackageIdFieldName(service);
+  (*vars)["service_id_name"] = ServiceIdFieldName(service);
   (*vars)["file_name"] = service->file()->name();
   (*vars)["server_class_name"] = ServerClassName(service);
   (*vars)["proteus_version"] = "";
@@ -627,7 +629,7 @@ static void PrintServer(const ServiceDescriptor* service,
       "@$Generated$(\n"
       "    value = \"by Proteus proto compiler$proteus_version$\",\n"
       "    comments = \"Source: $file_name$\")\n"
-      "public final class $server_class_name$ implements $RSocket$ {\n");
+      "public final class $server_class_name$ implements $ProteusService$ {\n");
   p->Indent();
 
   p->Print(
@@ -638,6 +640,28 @@ static void PrintServer(const ServiceDescriptor* service,
   p->Print(
       *vars,
       "this.service = service;\n");
+  p->Outdent();
+  p->Print("}\n\n");
+
+  p->Print(
+      *vars,
+      "@$Override$\n"
+      "public int getPackageId() {\n");
+  p->Indent();
+  p->Print(
+      *vars,
+      "return $service_name$.$package_id_name$;\n");
+  p->Outdent();
+  p->Print("}\n\n");
+
+  p->Print(
+      *vars,
+      "@$Override$\n"
+      "public int getServiceId() {\n");
+  p->Indent();
+  p->Print(
+      *vars,
+      "return $service_name$.$service_id_name$;\n");
   p->Outdent();
   p->Print("}\n\n");
 
@@ -1128,6 +1152,7 @@ void GenerateServer(const ServiceDescriptor* service,
   vars["RSocket"] = "io.rsocket.RSocket";
   vars["Payload"] = "io.rsocket.Payload";
   vars["PayloadImpl"] = "io.rsocket.util.PayloadImpl";
+  vars["ProteusService"] = "io.netifi.proteus.ProteusService";
   vars["ProteusMetadata"] = "io.netifi.proteus.frames.ProteusMetadata";
   vars["ByteBuf"] = "io.netty.buffer.ByteBuf";
   vars["Unpooled"] = "io.netty.buffer.Unpooled";

@@ -3,11 +3,21 @@ package io.netifi.testing.integration;
 @javax.annotation.Generated(
     value = "by Proteus proto compiler (version 0.1.0-SNAPSHOT)",
     comments = "Source: test.proto")
-public final class TestServiceServer implements io.rsocket.RSocket {
+public final class TestServiceServer implements io.netifi.proteus.ProteusService {
   private final TestService service;
 
   public TestServiceServer(TestService service) {
     this.service = service;
+  }
+
+  @java.lang.Override
+  public int getPackageId() {
+    return TestService.PACKAGE_ID;
+  }
+
+  @java.lang.Override
+  public int getServiceId() {
+    return TestService.SERVICE_ID;
   }
 
   @java.lang.Override
