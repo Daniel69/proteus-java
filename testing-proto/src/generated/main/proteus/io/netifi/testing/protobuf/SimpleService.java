@@ -9,7 +9,7 @@ package io.netifi.testing.protobuf;
     value = "by Proteus proto compiler",
     comments = "Source: io/netifi/testing/protobuf/simpleservice.proto")
 public interface SimpleService extends io.rsocket.Availability, io.rsocket.Closeable {
-  int PACKAGE_ID = 298608432;
+  int NAMESPACE_ID = 298608432;
   int SERVICE_ID = -1305494814;
   int METHOD_UNARY_RPC = -1434830019;
   int METHOD_CLIENT_STREAMING_RPC = 356703499;

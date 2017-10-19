@@ -14,7 +14,7 @@ public final class TestServiceClient implements TestService {
   public reactor.core.publisher.Mono<io.netifi.testing.integration.Test.SimpleResponse> unaryCall(io.netifi.testing.integration.Test.SimpleRequest message) {
     int length = io.netifi.proteus.frames.ProteusMetadata.computeLength();
     io.netty.buffer.ByteBuf metadata = io.netty.buffer.ByteBufAllocator.DEFAULT.directBuffer(length);
-    io.netifi.proteus.frames.ProteusMetadata.encode(metadata, TestService.PACKAGE_ID, TestService.SERVICE_ID, TestService.METHOD_UNARY_CALL);
+    io.netifi.proteus.frames.ProteusMetadata.encode(metadata, TestService.NAMESPACE_ID, TestService.SERVICE_ID, TestService.METHOD_UNARY_CALL);
     java.nio.ByteBuffer data = message.toByteString().asReadOnlyByteBuffer();
 
     return rSocket.requestResponse(new io.rsocket.util.PayloadImpl(data, metadata.nioBuffer()))
@@ -25,7 +25,7 @@ public final class TestServiceClient implements TestService {
   public reactor.core.publisher.Mono<Void> emptyCall(io.netifi.testing.integration.Test.SimpleRequest message) {
     int length = io.netifi.proteus.frames.ProteusMetadata.computeLength();
     io.netty.buffer.ByteBuf metadata = io.netty.buffer.ByteBufAllocator.DEFAULT.directBuffer(length);
-    io.netifi.proteus.frames.ProteusMetadata.encode(metadata, TestService.PACKAGE_ID, TestService.SERVICE_ID, TestService.METHOD_EMPTY_CALL);
+    io.netifi.proteus.frames.ProteusMetadata.encode(metadata, TestService.NAMESPACE_ID, TestService.SERVICE_ID, TestService.METHOD_EMPTY_CALL);
     java.nio.ByteBuffer data = message.toByteString().asReadOnlyByteBuffer();
 
     return rSocket.fireAndForget(new io.rsocket.util.PayloadImpl(data, metadata.nioBuffer()));
@@ -35,7 +35,7 @@ public final class TestServiceClient implements TestService {
   public reactor.core.publisher.Flux<io.netifi.testing.integration.Test.StreamingOutputCallResponse> streamingOutputCall(io.netifi.testing.integration.Test.StreamingOutputCallRequest message) {
     int length = io.netifi.proteus.frames.ProteusMetadata.computeLength();
     io.netty.buffer.ByteBuf metadata = io.netty.buffer.ByteBufAllocator.DEFAULT.directBuffer(length);
-    io.netifi.proteus.frames.ProteusMetadata.encode(metadata, TestService.PACKAGE_ID, TestService.SERVICE_ID, TestService.METHOD_STREAMING_OUTPUT_CALL);
+    io.netifi.proteus.frames.ProteusMetadata.encode(metadata, TestService.NAMESPACE_ID, TestService.SERVICE_ID, TestService.METHOD_STREAMING_OUTPUT_CALL);
     java.nio.ByteBuffer data = message.toByteString().asReadOnlyByteBuffer();
 
     return rSocket.requestStream(new io.rsocket.util.PayloadImpl(data, metadata.nioBuffer()))
@@ -46,7 +46,7 @@ public final class TestServiceClient implements TestService {
   public reactor.core.publisher.Mono<io.netifi.testing.integration.Test.StreamingInputCallResponse> streamingInputCall(org.reactivestreams.Publisher<io.netifi.testing.integration.Test.StreamingInputCallRequest> messages) {
     int length = io.netifi.proteus.frames.ProteusMetadata.computeLength();
     final io.netty.buffer.ByteBuf metadata = io.netty.buffer.ByteBufAllocator.DEFAULT.directBuffer(length);
-    io.netifi.proteus.frames.ProteusMetadata.encode(metadata, TestService.PACKAGE_ID, TestService.SERVICE_ID, TestService.METHOD_STREAMING_INPUT_CALL);
+    io.netifi.proteus.frames.ProteusMetadata.encode(metadata, TestService.NAMESPACE_ID, TestService.SERVICE_ID, TestService.METHOD_STREAMING_INPUT_CALL);
 
     reactor.core.publisher.Flux<io.netifi.testing.integration.Test.StreamingInputCallRequest> publisher = reactor.core.publisher.Flux.from(messages);
     return rSocket.requestChannel(publisher.map(new java.util.function.Function<com.google.protobuf.MessageLite, io.rsocket.Payload>() {
@@ -62,7 +62,7 @@ public final class TestServiceClient implements TestService {
   public reactor.core.publisher.Flux<io.netifi.testing.integration.Test.StreamingOutputCallResponse> fullBidiCall(org.reactivestreams.Publisher<io.netifi.testing.integration.Test.StreamingOutputCallRequest> messages) {
     int length = io.netifi.proteus.frames.ProteusMetadata.computeLength();
     final io.netty.buffer.ByteBuf metadata = io.netty.buffer.ByteBufAllocator.DEFAULT.directBuffer(length);
-    io.netifi.proteus.frames.ProteusMetadata.encode(metadata, TestService.PACKAGE_ID, TestService.SERVICE_ID, TestService.METHOD_FULL_BIDI_CALL);
+    io.netifi.proteus.frames.ProteusMetadata.encode(metadata, TestService.NAMESPACE_ID, TestService.SERVICE_ID, TestService.METHOD_FULL_BIDI_CALL);
 
     reactor.core.publisher.Flux<io.netifi.testing.integration.Test.StreamingOutputCallRequest> publisher = reactor.core.publisher.Flux.from(messages);
     return rSocket.requestChannel(publisher.map(new java.util.function.Function<com.google.protobuf.MessageLite, io.rsocket.Payload>() {
@@ -78,7 +78,7 @@ public final class TestServiceClient implements TestService {
   public reactor.core.publisher.Flux<io.netifi.testing.integration.Test.StreamingOutputCallResponse> halfBidiCall(org.reactivestreams.Publisher<io.netifi.testing.integration.Test.StreamingOutputCallRequest> messages) {
     int length = io.netifi.proteus.frames.ProteusMetadata.computeLength();
     final io.netty.buffer.ByteBuf metadata = io.netty.buffer.ByteBufAllocator.DEFAULT.directBuffer(length);
-    io.netifi.proteus.frames.ProteusMetadata.encode(metadata, TestService.PACKAGE_ID, TestService.SERVICE_ID, TestService.METHOD_HALF_BIDI_CALL);
+    io.netifi.proteus.frames.ProteusMetadata.encode(metadata, TestService.NAMESPACE_ID, TestService.SERVICE_ID, TestService.METHOD_HALF_BIDI_CALL);
 
     reactor.core.publisher.Flux<io.netifi.testing.integration.Test.StreamingOutputCallRequest> publisher = reactor.core.publisher.Flux.from(messages);
     return rSocket.requestChannel(publisher.map(new java.util.function.Function<com.google.protobuf.MessageLite, io.rsocket.Payload>() {

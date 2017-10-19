@@ -11,8 +11,8 @@ public final class TestServiceServer implements io.netifi.proteus.ProteusService
   }
 
   @java.lang.Override
-  public int getPackageId() {
-    return TestService.PACKAGE_ID;
+  public int getNamespaceId() {
+    return TestService.NAMESPACE_ID;
   }
 
   @java.lang.Override

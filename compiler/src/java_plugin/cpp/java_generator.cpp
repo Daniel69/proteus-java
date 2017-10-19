@@ -101,9 +101,9 @@ static inline string ServiceId(const ServiceDescriptor* service) {
   return to_string(hash);
 }
 
-static inline string PackageIdFieldName(const ServiceDescriptor* service) { return "PACKAGE_ID"; }
+static inline string NamespaceIdFieldName(const ServiceDescriptor* service) { return "NAMESPACE_ID"; }
 
-static inline string PackageId(const ServiceDescriptor* service) {
+static inline string NamespaceId(const ServiceDescriptor* service) {
   int32_t hash = Hash(service->file()->package());
   return to_string(hash);
 }
@@ -311,8 +311,8 @@ static void PrintInterface(const ServiceDescriptor* service,
                            ProtoFlavor flavor,
                            bool disable_version) {
   (*vars)["service_name"] = service->name();
-  (*vars)["package_id_name"] = PackageIdFieldName(service);
-  (*vars)["package_id"] = PackageId(service);
+  (*vars)["namespace_id_name"] = NamespaceIdFieldName(service);
+  (*vars)["namespace_id"] = NamespaceId(service);
   (*vars)["service_id_name"] = ServiceIdFieldName(service);
   (*vars)["service_id"] = ServiceId(service);
   (*vars)["file_name"] = service->file()->name();
@@ -332,7 +332,7 @@ static void PrintInterface(const ServiceDescriptor* service,
   p->Indent();
 
   // Service IDs
-  p->Print(*vars, "int $package_id_name$ = $package_id$;\n");
+  p->Print(*vars, "int $namespace_id_name$ = $namespace_id$;\n");
   p->Print(*vars, "int $service_id_name$ = $service_id$;\n");
 
   for (int i = 0; i < service->method_count(); ++i) {
@@ -387,7 +387,7 @@ static void PrintClient(const ServiceDescriptor* service,
                         ProtoFlavor flavor,
                         bool disable_version) {
   (*vars)["service_name"] = service->name();
-  (*vars)["package_id_name"] = PackageIdFieldName(service);
+  (*vars)["namespace_id_name"] = NamespaceIdFieldName(service);
   (*vars)["service_id_name"] = ServiceIdFieldName(service);
   (*vars)["file_name"] = service->file()->name();
   (*vars)["client_class_name"] = ClientClassName(service);
@@ -461,7 +461,7 @@ static void PrintClient(const ServiceDescriptor* service,
           *vars,
           "int length = $ProteusMetadata$.computeLength();\n"
           "final $ByteBuf$ metadata = $ByteBufAllocator$.DEFAULT.directBuffer(length);\n"
-          "$ProteusMetadata$.encode(metadata, $service_name$.$package_id_name$, $service_name$.$service_id_name$, $service_name$.$method_id_name$);\n\n"
+          "$ProteusMetadata$.encode(metadata, $service_name$.$namespace_id_name$, $service_name$.$service_id_name$, $service_name$.$method_id_name$);\n\n"
           "$Flux$<$input_type$> publisher = $Flux$.$from$(messages);\n"
           "return rSocket.requestChannel(publisher.map(new $Function$<$MessageLite$, $Payload$>() {\n");
       p->Indent();
@@ -498,7 +498,7 @@ static void PrintClient(const ServiceDescriptor* service,
           *vars,
           "int length = $ProteusMetadata$.computeLength();\n"
           "$ByteBuf$ metadata = $ByteBufAllocator$.DEFAULT.directBuffer(length);\n"
-          "$ProteusMetadata$.encode(metadata, $service_name$.$package_id_name$, $service_name$.$service_id_name$, $service_name$.$method_id_name$);\n"
+          "$ProteusMetadata$.encode(metadata, $service_name$.$namespace_id_name$, $service_name$.$service_id_name$, $service_name$.$method_id_name$);\n"
           "$ByteBuffer$ data = message.toByteString().asReadOnlyByteBuffer();\n\n");
 
       if (server_streaming) {
@@ -614,7 +614,7 @@ static void PrintServer(const ServiceDescriptor* service,
                         ProtoFlavor flavor,
                         bool disable_version) {
   (*vars)["service_name"] = service->name();
-  (*vars)["package_id_name"] = PackageIdFieldName(service);
+  (*vars)["namespace_id_name"] = NamespaceIdFieldName(service);
   (*vars)["service_id_name"] = ServiceIdFieldName(service);
   (*vars)["file_name"] = service->file()->name();
   (*vars)["server_class_name"] = ServerClassName(service);
@@ -646,11 +646,11 @@ static void PrintServer(const ServiceDescriptor* service,
   p->Print(
       *vars,
       "@$Override$\n"
-      "public int getPackageId() {\n");
+      "public int getNamespaceId() {\n");
   p->Indent();
   p->Print(
       *vars,
-      "return $service_name$.$package_id_name$;\n");
+      "return $service_name$.$namespace_id_name$;\n");
   p->Outdent();
   p->Print("}\n\n");
 

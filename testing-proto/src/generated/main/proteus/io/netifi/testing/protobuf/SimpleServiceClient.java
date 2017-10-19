@@ -14,7 +14,7 @@ public final class SimpleServiceClient implements SimpleService {
   public reactor.core.publisher.Mono<io.netifi.testing.protobuf.SimpleResponse> unaryRpc(io.netifi.testing.protobuf.SimpleRequest message) {
     int length = io.netifi.proteus.frames.ProteusMetadata.computeLength();
     io.netty.buffer.ByteBuf metadata = io.netty.buffer.ByteBufAllocator.DEFAULT.directBuffer(length);
-    io.netifi.proteus.frames.ProteusMetadata.encode(metadata, SimpleService.PACKAGE_ID, SimpleService.SERVICE_ID, SimpleService.METHOD_UNARY_RPC);
+    io.netifi.proteus.frames.ProteusMetadata.encode(metadata, SimpleService.NAMESPACE_ID, SimpleService.SERVICE_ID, SimpleService.METHOD_UNARY_RPC);
     java.nio.ByteBuffer data = message.toByteString().asReadOnlyByteBuffer();
 
     return rSocket.requestResponse(new io.rsocket.util.PayloadImpl(data, metadata.nioBuffer()))
@@ -25,7 +25,7 @@ public final class SimpleServiceClient implements SimpleService {
   public reactor.core.publisher.Mono<io.netifi.testing.protobuf.SimpleResponse> clientStreamingRpc(org.reactivestreams.Publisher<io.netifi.testing.protobuf.SimpleRequest> messages) {
     int length = io.netifi.proteus.frames.ProteusMetadata.computeLength();
     final io.netty.buffer.ByteBuf metadata = io.netty.buffer.ByteBufAllocator.DEFAULT.directBuffer(length);
-    io.netifi.proteus.frames.ProteusMetadata.encode(metadata, SimpleService.PACKAGE_ID, SimpleService.SERVICE_ID, SimpleService.METHOD_CLIENT_STREAMING_RPC);
+    io.netifi.proteus.frames.ProteusMetadata.encode(metadata, SimpleService.NAMESPACE_ID, SimpleService.SERVICE_ID, SimpleService.METHOD_CLIENT_STREAMING_RPC);
 
     reactor.core.publisher.Flux<io.netifi.testing.protobuf.SimpleRequest> publisher = reactor.core.publisher.Flux.from(messages);
     return rSocket.requestChannel(publisher.map(new java.util.function.Function<com.google.protobuf.MessageLite, io.rsocket.Payload>() {
@@ -41,7 +41,7 @@ public final class SimpleServiceClient implements SimpleService {
   public reactor.core.publisher.Flux<io.netifi.testing.protobuf.SimpleResponse> serverStreamingRpc(io.netifi.testing.protobuf.SimpleRequest message) {
     int length = io.netifi.proteus.frames.ProteusMetadata.computeLength();
     io.netty.buffer.ByteBuf metadata = io.netty.buffer.ByteBufAllocator.DEFAULT.directBuffer(length);
-    io.netifi.proteus.frames.ProteusMetadata.encode(metadata, SimpleService.PACKAGE_ID, SimpleService.SERVICE_ID, SimpleService.METHOD_SERVER_STREAMING_RPC);
+    io.netifi.proteus.frames.ProteusMetadata.encode(metadata, SimpleService.NAMESPACE_ID, SimpleService.SERVICE_ID, SimpleService.METHOD_SERVER_STREAMING_RPC);
     java.nio.ByteBuffer data = message.toByteString().asReadOnlyByteBuffer();
 
     return rSocket.requestStream(new io.rsocket.util.PayloadImpl(data, metadata.nioBuffer()))
@@ -52,7 +52,7 @@ public final class SimpleServiceClient implements SimpleService {
   public reactor.core.publisher.Flux<io.netifi.testing.protobuf.SimpleResponse> bidiStreamingRpc(org.reactivestreams.Publisher<io.netifi.testing.protobuf.SimpleRequest> messages) {
     int length = io.netifi.proteus.frames.ProteusMetadata.computeLength();
     final io.netty.buffer.ByteBuf metadata = io.netty.buffer.ByteBufAllocator.DEFAULT.directBuffer(length);
-    io.netifi.proteus.frames.ProteusMetadata.encode(metadata, SimpleService.PACKAGE_ID, SimpleService.SERVICE_ID, SimpleService.METHOD_BIDI_STREAMING_RPC);
+    io.netifi.proteus.frames.ProteusMetadata.encode(metadata, SimpleService.NAMESPACE_ID, SimpleService.SERVICE_ID, SimpleService.METHOD_BIDI_STREAMING_RPC);
 
     reactor.core.publisher.Flux<io.netifi.testing.protobuf.SimpleRequest> publisher = reactor.core.publisher.Flux.from(messages);
     return rSocket.requestChannel(publisher.map(new java.util.function.Function<com.google.protobuf.MessageLite, io.rsocket.Payload>() {
