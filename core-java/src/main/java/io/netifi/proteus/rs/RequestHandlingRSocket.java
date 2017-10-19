@@ -149,7 +149,7 @@ public class RequestHandlingRSocket implements RSocket {
             registeredServices.forEach(
                 new BiInt2ObjectMap.EntryConsumer<ProteusService>() {
                   @Override
-                  public void accept(int keyPartA, int keyPartB, ProteusService service) {
+                  public void accept(ProteusService service) {
                     service.close().subscribe();
                   }
                 });

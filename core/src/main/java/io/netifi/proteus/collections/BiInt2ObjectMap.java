@@ -230,29 +230,10 @@ public class BiInt2ObjectMap<V> implements Serializable {
    * @param consumer to apply to each value in the map
    */
   @SuppressWarnings("unchecked")
-  public void forEach(final Consumer<V> consumer) {
+  public void forEach(final EntryConsumer<V> consumer) {
     for (final Object value : values) {
       if (null != value) {
         consumer.accept((V) value);
-      }
-    }
-  }
-
-  /**
-   * Iterate over the contents of the map
-   *
-   * @param consumer to apply to each value in the map
-   */
-  @SuppressWarnings("unchecked")
-  public void forEach(final EntryConsumer<V> consumer) {
-    for (int i = 0, size = values.length; i < size; i++) {
-      final Object value = values[i];
-      if (null != value) {
-        final long compoundKey = keys[i];
-        final int keyPartA = (int) (compoundKey >>> 32);
-        final int keyPartB = (int) (compoundKey & 0xFFFFFFFFL);
-
-        consumer.accept(keyPartA, keyPartB, (V) value);
       }
     }
   }
@@ -343,11 +324,9 @@ public class BiInt2ObjectMap<V> implements Serializable {
     /**
      * A map entry
      *
-     * @param keyPartA for the key
-     * @param keyPartB for the key
      * @param value for the entry
      */
-    void accept(int keyPartA, int keyPartB, V value);
+    void accept(V value);
   }
 
   /**
