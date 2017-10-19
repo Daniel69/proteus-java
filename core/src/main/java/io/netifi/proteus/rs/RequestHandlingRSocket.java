@@ -16,8 +16,6 @@ import reactor.core.publisher.MonoProcessor;
 import java.util.function.Function;
 
 public class RequestHandlingRSocket implements RSocket {
-  private static final String PACKAGE_ID = "PACKAGE_ID";
-  private static final String SERVICE_ID = "SERVICE_ID";
   private final BiInt2ObjectMap<ProteusService> registeredServices;
   private MonoProcessor<Void> onClose;
 
