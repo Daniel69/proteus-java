@@ -1,6 +1,8 @@
 package io.netifi.proteus;
 
-public interface ProteusService {
+import io.rsocket.RSocket;
+
+public interface ProteusService extends RSocket {
     int getPackageId();
     int getServiceId();
 }
