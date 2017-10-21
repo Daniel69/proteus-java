@@ -21,6 +21,7 @@ subprojects {
     apply plugin: "idea"
     apply plugin: "signing"
     apply plugin: "jacoco"
+    apply plugin: "maven-publish"
 
     apply plugin: "me.champeau.gradle.jmh"
     apply plugin: "com.google.osdetector"

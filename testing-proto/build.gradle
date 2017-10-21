@@ -1,5 +1,8 @@
 description = "Proteus: Testing Protos"
 
+sourceCompatibility = 1.8
+targetCompatibility = 1.8
+
 // Add dependency on the protobuf plugin
 buildscript {
     repositories {
@@ -13,6 +16,9 @@ buildscript {
 dependencies {
     compile project(':proteus-core'),
             libraries.protobuf
+
+    testCompile 'io.rsocket:rsocket-transport-netty:0.9.12'
+
 }
 
 configureProtoCompilation()
