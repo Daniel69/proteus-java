@@ -1,15 +1,18 @@
 # proteus-java
 A fast, and easy [RSocket](http://rsocket.io/)-based RPC layer.
 
-## Building Proteus
-### Prerequisites
-Building proteus-java requires installation of the [Protobuf](https://github.com/google/protobuf) compiler.
+## Build from Source
+1. Building proteus-java requires installation of the [Protobuf](https://github.com/google/protobuf) compiler.
 
-For Mac users you can easily install the Protobuf compiler using Homebrew:
-
-    $ brew install protobuf
+    For Mac users you can easily install the Protobuf compiler using Homebrew:
     
-For other operating systems you can install the Protobuf compiler using the pre-built packages hosted on the [Protobuf Releases](https://github.com/google/protobuf/releases) page.
+        $ brew install protobuf
+        
+    For other operating systems you can install the Protobuf compiler using the pre-built packages hosted on the [Protobuf Releases](https://github.com/google/protobuf/releases) page.
+
+2. Run the following Gradle command to build the project:
+
+        $ ./gradlew clean build
 
 ## Bugs and Feedback
 
