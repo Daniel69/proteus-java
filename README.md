@@ -164,7 +164,7 @@ client
 
 ## Bugs and Feedback
 
-For bugs, questions and discussions please use the [Github Issues](https://github.com/netifi/proteus-java/issues).
+For bugs, questions, and discussions please use the [Github Issues](https://github.com/netifi/proteus-java/issues).
 
 ## License
 Copyright 2017 Netifi Inc.
