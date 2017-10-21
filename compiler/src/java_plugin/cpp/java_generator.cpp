@@ -459,7 +459,7 @@ static void PrintClient(const ServiceDescriptor* service,
       p->Indent();
       p->Print(
           *vars,
-          "int length = $ProteusMetadata$.computeLength();\n"
+          "final int length = $ProteusMetadata$.computeLength();\n"
           "final $ByteBuf$ metadata = $ByteBufAllocator$.DEFAULT.directBuffer(length);\n"
           "$ProteusMetadata$.encode(metadata, $service_name$.$namespace_id_name$, $service_name$.$service_id_name$, $service_name$.$method_id_name$);\n\n"
           "$Flux$<$input_type$> publisher = $Flux$.$from$(messages);\n"
@@ -473,7 +473,7 @@ static void PrintClient(const ServiceDescriptor* service,
       p->Print(
           *vars,
           "$ByteBuffer$ data = message.toByteString().asReadOnlyByteBuffer();\n"
-          "return new $PayloadImpl$(data, metadata.nioBuffer());\n");
+          "return new $PayloadImpl$(data, metadata.nioBuffer(0, length));\n");
       p->Outdent();
       p->Print("}\n");
       p->Outdent();
@@ -496,7 +496,7 @@ static void PrintClient(const ServiceDescriptor* service,
       p->Indent();
       p->Print(
           *vars,
-          "int length = $ProteusMetadata$.computeLength();\n"
+          "final int length = $ProteusMetadata$.computeLength();\n"
           "$ByteBuf$ metadata = $ByteBufAllocator$.DEFAULT.directBuffer(length);\n"
           "$ProteusMetadata$.encode(metadata, $service_name$.$namespace_id_name$, $service_name$.$service_id_name$, $service_name$.$method_id_name$);\n"
           "$ByteBuffer$ data = message.toByteString().asReadOnlyByteBuffer();\n\n");
@@ -504,7 +504,7 @@ static void PrintClient(const ServiceDescriptor* service,
       if (server_streaming) {
         p->Print(
             *vars,
-            "return rSocket.requestStream(new $PayloadImpl$(data, metadata.nioBuffer()))\n");
+            "return rSocket.requestStream(new $PayloadImpl$(data, metadata.nioBuffer(0, length)))\n");
         p->Indent();
         p->Print(
             *vars,
@@ -515,7 +515,7 @@ static void PrintClient(const ServiceDescriptor* service,
         if (output_type->field_count() > 0) {
           p->Print(
               *vars,
-              "return rSocket.requestResponse(new $PayloadImpl$(data, metadata.nioBuffer()))\n");
+              "return rSocket.requestResponse(new $PayloadImpl$(data, metadata.nioBuffer(0, length)))\n");
           p->Indent();
           p->Print(
               *vars,
@@ -524,7 +524,7 @@ static void PrintClient(const ServiceDescriptor* service,
         } else {
           p->Print(
               *vars,
-              "return rSocket.fireAndForget(new $PayloadImpl$(data, metadata.nioBuffer()));\n");
+              "return rSocket.fireAndForget(new $PayloadImpl$(data, metadata.nioBuffer(0, length)));\n");
         }
       }
 

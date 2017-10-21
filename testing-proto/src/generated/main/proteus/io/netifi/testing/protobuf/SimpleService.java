@@ -1,8 +1,5 @@
 package io.netifi.testing.protobuf;
 
-import org.reactivestreams.Publisher;
-import reactor.core.publisher.Flux;
-
 /**
  * <pre>
  * A simple service for test.
@@ -46,5 +43,4 @@ public interface SimpleService extends io.rsocket.Availability, io.rsocket.Close
    * </pre>
    */
   reactor.core.publisher.Flux<io.netifi.testing.protobuf.SimpleResponse> bidiStreamingRpc(org.reactivestreams.Publisher<io.netifi.testing.protobuf.SimpleRequest> messages);
-  
 }
