@@ -12,7 +12,7 @@ A fast, and easy [RSocket](http://rsocket.io/)-based RPC layer.
 
 2. Run the following Gradle command to build the project:
 
-    $ ./gradlew clean build
+        $ ./gradlew clean build
 
 ## Bugs and Feedback
 
