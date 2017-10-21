@@ -120,6 +120,7 @@ tmp/
 
 # User-specific stuff:
 .idea/**
+**/out/
 
 # CMake
 cmake-build-debug/
