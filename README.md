@@ -5,14 +5,162 @@ A fast, and easy [RSocket](http://rsocket.io/)-based RPC layer.
 1. Building proteus-java requires installation of the [Protobuf](https://github.com/google/protobuf) compiler.
 
     For Mac users you can easily install the Protobuf compiler using Homebrew:
-    
+
         $ brew install protobuf
-        
+
     For other operating systems you can install the Protobuf compiler using the pre-built packages hosted on the [Protobuf Releases](https://github.com/google/protobuf/releases) page.
 
 2. Run the following Gradle command to build the project:
 
         $ ./gradlew clean build
+
+## Trivial Example
+1. Create an Protobuf IDL:
+```
+syntax = "proto3";
+
+package io.netifi.testing;
+
+option java_package = "io.netifi.testing.protobuf";
+option java_outer_classname = "SimpleServiceProto";
+option java_multiple_files = true;
+
+// A simple service for test.
+service SimpleService {
+  // Simple unary RPC.
+  rpc UnaryRpc (SimpleRequest) returns (SimpleResponse) {}
+
+  // Simple client-to-server streaming RPC.
+  rpc ClientStreamingRpc (stream SimpleRequest) returns (SimpleResponse) {}
+
+  // Simple server-to-client streaming RPC.
+  rpc ServerStreamingRpc (SimpleRequest) returns (stream SimpleResponse) {}
+
+  // Simple bidirectional streaming RPC.
+  rpc BidiStreamingRpc (stream SimpleRequest) returns (stream SimpleResponse) {}
+}
+
+// A simple request message type for test.
+message SimpleRequest {
+  // An optional string message for test.
+  string requestMessage = 1;
+}
+
+// A simple response message type for test.
+message SimpleResponse {
+  // An optional string message for test.
+  string responseMessage = 1;
+}
+```
+
+2. Generate code with the Gradle plugin:
+```
+protobuf {
+  // Configure the codegen plugins
+  plugins {
+    // Define a plugin with name 'grpc'
+    proteus {
+      artifact = 'io.proteus:proteus-java'
+    }
+  }
+}
+```
+
+3. Implement the SimpleService interface
+```
+public class DefaultSimpleService implements SimpleService {
+    @Override
+    public Mono<SimpleResponse> unaryRpc(SimpleRequest message) {
+      return Mono.fromCallable(
+          () ->
+              SimpleResponse.newBuilder()
+                  .setResponseMessage("we got the message -> " + message.getRequestMessage())
+                  .build());
+    }
+
+    @Override
+    public Mono<SimpleResponse> clientStreamingRpc(Publisher<SimpleRequest> messages) {
+      return Flux.from(messages)
+          .take(10)
+          .doOnNext(s -> System.out.println("got -> " + s.getRequestMessage()))
+          .last()
+          .map(
+              simpleRequest ->
+                  SimpleResponse.newBuilder()
+                      .setResponseMessage("last one -> " + simpleRequest.getRequestMessage())
+                      .build());
+
+    }
+
+    @Override
+    public Flux<SimpleResponse> serverStreamingRpc(SimpleRequest message) {
+      String requestMessage = message.getRequestMessage();
+      return Flux.interval(Duration.ofMillis(200))
+          .onBackpressureDrop()
+          .map(i -> i + " - got message - " + requestMessage)
+          .map(s -> SimpleResponse.newBuilder().setResponseMessage(s).build());
+    }
+
+    @Override
+    public Flux<SimpleResponse> bidiStreamingRpc(Publisher<SimpleRequest> messages) {
+      return Flux.from(messages).flatMap(this::unaryRpc);
+    }
+
+    @Override
+    public double availability() {
+      return 1.0;
+    }
+
+    @Override
+    public Mono<Void> close() {
+      return Mono.empty();
+    }
+
+    @Override
+    public Mono<Void> onClose() {
+      return Mono.empty();
+    }
+  }
+```
+
+4. Create an RSocket Server, and give it the generate SimpleServiceServer with the implemented interface
+```
+RSocketFactory
+        .receive()
+        .acceptor(
+            (setup, sendingSocket) ->
+                Mono.just(new SimpleServiceServer(new DefaultSimpleService())))
+        .transport(TcpServerTransport.create(8801))
+        .start()
+        .block();
+```
+
+5. Create Client, and give the RSocket to the generated SimpleServiceClient
+```
+RSocket rSocket = RSocketFactory.connect().transport(TcpClientTransport.create(8801)).start().block();
+SimpleServiceClient client = new SimpleServiceClient(rSocket);
+```
+
+6. Call the Client
+```
+SimpleResponse response =
+    client
+        .unaryRpc(SimpleRequest.newBuilder().setRequestMessage("sending a message").build())
+        .block();
+
+String responseMessage = response.getResponseMessage();
+
+System.out.println(responseMessage);
+
+SimpleServiceClient client = new SimpleServiceClient(rSocket);
+client
+    .serverStreamingRpc(
+        SimpleRequest.newBuilder().setRequestMessage("sending a message").build())
+    .take(5)
+    .toStream()
+.forEach(simpleResponse -> System.out.println(simpleResponse.getResponseMessage()));
+
+```
 
 ## Bugs and Feedback
 

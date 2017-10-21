@@ -59,7 +59,18 @@ public class SimpleServiceTest {
     String responseMessage = response.getResponseMessage();
     System.out.println(responseMessage);
   }
-
+  
+  @Test(timeout = 5_000)
+  public void testStreamingPrintEach() {
+    SimpleServiceClient client = new SimpleServiceClient(rSocket);
+        client
+            .serverStreamingRpc(
+                SimpleRequest.newBuilder().setRequestMessage("sending a message").build())
+            .take(5)
+            .toStream()
+        .forEach(simpleResponse -> System.out.println(simpleResponse.getResponseMessage()));
+  }
+  
   @Test() // timeout = 3_000)
   @Ignore
   public void testClientStreamingRpc() {
