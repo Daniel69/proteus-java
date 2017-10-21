@@ -15,7 +15,7 @@ A fast, and easy [RSocket](http://rsocket.io/)-based RPC layer.
         $ ./gradlew clean build
 
 ## Trivial Example
-1. Create an Protobuf IDL:
+1. Create a Protobuf IDL:
 ```
 syntax = "proto3";
 
@@ -53,12 +53,12 @@ message SimpleResponse {
 }
 ```
 
-2. Generate code with the Gradle plugin:
+2. Generate code with the [Profobuf Gradle Plugin](https://github.com/google/protobuf-gradle-plugin):
 ```
 protobuf {
   // Configure the codegen plugins
   plugins {
-    // Define a plugin with name 'grpc'
+    // Define the proteus plugin
     proteus {
       artifact = 'io.proteus:proteus-java'
     }
@@ -66,7 +66,7 @@ protobuf {
 }
 ```
 
-3. Implement the SimpleService interface
+3. Implement the SimpleService interface:
 ```
 public class DefaultSimpleService implements SimpleService {
     @Override
@@ -123,7 +123,7 @@ public class DefaultSimpleService implements SimpleService {
   }
 ```
 
-4. Create an RSocket Server, and give it the generate SimpleServiceServer with the implemented interface
+4. Create an RSocket Server, and give it the generate SimpleServiceServer with the implemented interface:
 ```
 RSocketFactory
         .receive()
@@ -135,13 +135,13 @@ RSocketFactory
         .block();
 ```
 
-5. Create Client, and give the RSocket to the generated SimpleServiceClient
+5. Create Client, and give the RSocket to the generated SimpleServiceClient:
 ```
 RSocket rSocket = RSocketFactory.connect().transport(TcpClientTransport.create(8801)).start().block();
 SimpleServiceClient client = new SimpleServiceClient(rSocket);
 ```
 
-6. Call the Client
+6. Call the Client:
 ```
 SimpleResponse response =
     client
