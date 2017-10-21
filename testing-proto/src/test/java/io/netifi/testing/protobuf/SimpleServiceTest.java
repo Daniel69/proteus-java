@@ -5,19 +5,21 @@ import io.rsocket.RSocketFactory;
 import io.rsocket.transport.netty.client.TcpClientTransport;
 import io.rsocket.transport.netty.server.TcpServerTransport;
 import org.junit.Assert;
+import org.junit.BeforeClass;
+import org.junit.Ignore;
 import org.junit.Test;
 import org.reactivestreams.Publisher;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
 import java.time.Duration;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.atomic.AtomicInteger;
-import java.util.function.Function;
 
 public class SimpleServiceTest {
-  @Test
-  public void testUnaryRpc() {
+
+  private static RSocket rSocket;
+
+  @BeforeClass
+  public static void setup() {
     RSocketFactory.receive()
         .acceptor(
             (setup, sendingSocket) ->
@@ -26,9 +28,11 @@ public class SimpleServiceTest {
         .start()
         .block();
 
-    RSocket rSocket =
-        RSocketFactory.connect().transport(TcpClientTransport.create(8801)).start().block();
+    rSocket = RSocketFactory.connect().transport(TcpClientTransport.create(8801)).start().block();
+  }
 
+  @Test
+  public void testUnaryRpc() {
     SimpleServiceClient client = new SimpleServiceClient(rSocket);
     SimpleResponse response =
         client
@@ -42,7 +46,52 @@ public class SimpleServiceTest {
     Assert.assertEquals("we got the message -> sending a message", responseMessage);
   }
 
-  class DefaultSimpleService implements SimpleService {
+  @Test(timeout = 5_000)
+  public void testStreaming() {
+    SimpleServiceClient client = new SimpleServiceClient(rSocket);
+    SimpleResponse response =
+        client
+            .serverStreamingRpc(
+                SimpleRequest.newBuilder().setRequestMessage("sending a message").build())
+            .take(5)
+            .blockLast();
+
+    String responseMessage = response.getResponseMessage();
+    System.out.println(responseMessage);
+  }
+
+  @Test() // timeout = 3_000)
+  @Ignore
+  public void testClientStreamingRpc() {
+    SimpleServiceClient client = new SimpleServiceClient(rSocket);
+
+    Flux<SimpleRequest> requests =
+        Flux.range(1, 11)
+            .map(i -> "sending -> " + i)
+            .map(s -> SimpleRequest.newBuilder().setRequestMessage(s).build());
+
+    SimpleResponse response = client.clientStreamingRpc(requests).block();
+
+    System.out.println(response.getResponseMessage());
+  }
+  
+  @Test() // timeout = 3_000)
+  @Ignore
+  public void testBidiStreamingRpc() {
+    SimpleServiceClient client = new SimpleServiceClient(rSocket);
+    
+    Flux<SimpleRequest> requests =
+        Flux.range(1, 11)
+            .map(i -> "sending -> " + i)
+            .map(s -> SimpleRequest.newBuilder().setRequestMessage(s).build());
+    
+    SimpleResponse response = client.bidiStreamingRpc(requests).take(10).blockLast();
+    
+    System.out.println(response.getResponseMessage());
+  }
+  
+  
+  static class DefaultSimpleService implements SimpleService {
     @Override
     public Mono<SimpleResponse> unaryRpc(SimpleRequest message) {
       return Mono.fromCallable(
@@ -55,7 +104,18 @@ public class SimpleServiceTest {
     @Override
     public Mono<SimpleResponse> clientStreamingRpc(Publisher<SimpleRequest> messages) {
       return Flux.from(messages)
-          .windowTimeout(50, Duration.ofSeconds(30))
+          .take(10)
+          .doOnNext(s -> System.out.println("got -> " + s.getRequestMessage()))
+          .last()
+          .map(
+              simpleRequest ->
+                  SimpleResponse.newBuilder()
+                      .setResponseMessage("last one -> " + simpleRequest.getRequestMessage())
+                      .build());
+
+      /*
+      return Flux.from(messages)
+          .windowTimeout(10, Duration.ofSeconds(500))
           .take(1)
           .flatMap(Function.identity())
           .reduce(
@@ -86,6 +146,7 @@ public class SimpleServiceTest {
 
                 return SimpleResponse.newBuilder().setResponseMessage(s).build();
               });
+       */
     }
 
     @Override
