@@ -1,7 +1,7 @@
 package io.netifi.testing.integration;
 
 @javax.annotation.Generated(
-    value = "by Proteus proto compiler (version 0.1.0-SNAPSHOT)",
+    value = "by Proteus proto compiler (version 0.1.0)",
     comments = "Source: test.proto")
 public final class TestServiceServer implements io.netifi.proteus.ProteusService {
   private final TestService service;
