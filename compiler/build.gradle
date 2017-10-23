@@ -119,9 +119,9 @@ configurations {
 }
 
 dependencies {
-  testCompile project(':proteus-core-java'),
+  testCompile project(':proteus-core'),
               libraries.protobuf
-  testLiteCompile project(':proteus-core-java'),
+  testLiteCompile project(':proteus-core'),
                   libraries.protobuf_lite
 }
 

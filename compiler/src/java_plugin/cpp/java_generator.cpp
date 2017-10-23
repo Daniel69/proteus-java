@@ -1151,9 +1151,9 @@ void GenerateServer(const ServiceDescriptor* service,
   vars["RSocket"] = "io.rsocket.RSocket";
   vars["Payload"] = "io.rsocket.Payload";
   vars["PayloadImpl"] = "io.rsocket.util.PayloadImpl";
+  vars["SwitchTransform"] = "io.rsocket.internal.SwitchTransform";
   vars["ProteusService"] = "io.netifi.proteus.ProteusService";
   vars["ProteusMetadata"] = "io.netifi.proteus.frames.ProteusMetadata";
-  vars["SwitchTransform"] = "io.netifi.proteus.rs.SwitchTransform";
   vars["ByteBuf"] = "io.netty.buffer.ByteBuf";
   vars["Unpooled"] = "io.netty.buffer.Unpooled";
   vars["ByteString"] = "com.google.protobuf.ByteString";

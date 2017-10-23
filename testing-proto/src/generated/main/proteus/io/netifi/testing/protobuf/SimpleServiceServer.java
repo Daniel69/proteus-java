@@ -63,7 +63,7 @@ public final class SimpleServiceServer implements io.netifi.proteus.ProteusServi
 
   @java.lang.Override
   public reactor.core.publisher.Flux<io.rsocket.Payload> requestChannel(org.reactivestreams.Publisher<io.rsocket.Payload> payloads) {
-    return new io.netifi.proteus.rs.SwitchTransform<io.rsocket.Payload, com.google.protobuf.MessageLite>(payloads, new java.util.function.BiFunction<io.rsocket.Payload, reactor.core.publisher.Flux<? extends io.rsocket.Payload>, org.reactivestreams.Publisher<? extends com.google.protobuf.MessageLite>>() {
+    return new io.rsocket.internal.SwitchTransform<io.rsocket.Payload, com.google.protobuf.MessageLite>(payloads, new java.util.function.BiFunction<io.rsocket.Payload, reactor.core.publisher.Flux<? extends io.rsocket.Payload>, org.reactivestreams.Publisher<? extends com.google.protobuf.MessageLite>>() {
       @java.lang.Override
       public org.reactivestreams.Publisher<? extends com.google.protobuf.MessageLite> apply(io.rsocket.Payload payload, reactor.core.publisher.Flux<? extends io.rsocket.Payload> publisher) {
         try {
