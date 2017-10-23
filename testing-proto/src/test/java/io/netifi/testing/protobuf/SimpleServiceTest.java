@@ -12,6 +12,9 @@ import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
 import java.time.Duration;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.atomic.AtomicInteger;
+import java.util.function.Function;
 
 public class SimpleServiceTest {
 
@@ -58,19 +61,19 @@ public class SimpleServiceTest {
     String responseMessage = response.getResponseMessage();
     System.out.println(responseMessage);
   }
-  
+
   @Test(timeout = 5_000)
   public void testStreamingPrintEach() {
     SimpleServiceClient client = new SimpleServiceClient(rSocket);
-        client
-            .serverStreamingRpc(
-                SimpleRequest.newBuilder().setRequestMessage("sending a message").build())
-            .take(5)
-            .toStream()
+    client
+        .serverStreamingRpc(
+            SimpleRequest.newBuilder().setRequestMessage("sending a message").build())
+        .take(5)
+        .toStream()
         .forEach(simpleResponse -> System.out.println(simpleResponse.getResponseMessage()));
   }
-  
-  @Test() // timeout = 3_000)
+
+  @Test(timeout = 3_000)
   public void testClientStreamingRpc() {
     SimpleServiceClient client = new SimpleServiceClient(rSocket);
 
@@ -83,22 +86,21 @@ public class SimpleServiceTest {
 
     System.out.println(response.getResponseMessage());
   }
-  
-  @Test() // timeout = 3_000)
+
+  @Test(timeout = 3_000)
   public void testBidiStreamingRpc() {
     SimpleServiceClient client = new SimpleServiceClient(rSocket);
-    
+
     Flux<SimpleRequest> requests =
         Flux.range(1, 11)
             .map(i -> "sending -> " + i)
             .map(s -> SimpleRequest.newBuilder().setRequestMessage(s).build());
-    
+
     SimpleResponse response = client.bidiStreamingRpc(requests).take(10).blockLast();
-    
+
     System.out.println(response.getResponseMessage());
   }
-  
-  
+
   static class DefaultSimpleService implements SimpleService {
     @Override
     public Mono<SimpleResponse> unaryRpc(SimpleRequest message) {
@@ -111,17 +113,6 @@ public class SimpleServiceTest {
 
     @Override
     public Mono<SimpleResponse> clientStreamingRpc(Publisher<SimpleRequest> messages) {
-      return Flux.from(messages)
-          .take(10)
-          .doOnNext(s -> System.out.println("got -> " + s.getRequestMessage()))
-          .last()
-          .map(
-              simpleRequest ->
-                  SimpleResponse.newBuilder()
-                      .setResponseMessage("last one -> " + simpleRequest.getRequestMessage())
-                      .build());
-
-      /*
       return Flux.from(messages)
           .windowTimeout(10, Duration.ofSeconds(500))
           .take(1)
@@ -154,7 +145,6 @@ public class SimpleServiceTest {
 
                 return SimpleResponse.newBuilder().setResponseMessage(s).build();
               });
-       */
     }
 
     @Override

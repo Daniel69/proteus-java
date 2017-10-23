@@ -3,6 +3,7 @@ package io.netifi.proteus.rs;
 import org.reactivestreams.Publisher;
 import org.reactivestreams.Subscription;
 import reactor.core.CoreSubscriber;
+import reactor.core.publisher.DirectProcessor;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Operators;
 import reactor.core.publisher.UnicastProcessor;
@@ -29,7 +30,7 @@ public final class SwitchTransform<T, R> extends Flux<R> {
 	static final class SwitchTransformSubscriber<T, R> implements CoreSubscriber<T> {
 		final CoreSubscriber<? super R> actual;
 		final BiFunction<T, Flux<? extends T>, Publisher<? extends R>> transformer;
-		final UnicastProcessor<T> processor = UnicastProcessor.create();
+		final DirectProcessor<T> processor = DirectProcessor.create();
 
 		Subscription s;
 
