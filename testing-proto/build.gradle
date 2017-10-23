@@ -14,7 +14,7 @@ buildscript {
 }
 
 dependencies {
-    compile project(':proteus-core'),
+    compile project(':proteus-core-java'),
             libraries.protobuf
 
     testCompile 'io.rsocket:rsocket-transport-netty:0.9.12'

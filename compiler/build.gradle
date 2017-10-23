@@ -119,9 +119,9 @@ configurations {
 }
 
 dependencies {
-  testCompile project(':proteus-core'),
+  testCompile project(':proteus-core-java'),
               libraries.protobuf
-  testLiteCompile project(':proteus-core'),
+  testLiteCompile project(':proteus-core-java'),
                   libraries.protobuf_lite
 }
 
@@ -265,7 +265,13 @@ def configureTestTask(Task task, String dep, String suffix) {
 
 task testGolden(type: Exec)
 task testClientGolden(type: Exec)
+task testServerGolden(type: Exec)
 task testLiteGolden(type: Exec)
+task testLiteClientGolden(type: Exec)
+task testLiteServerGolden(type: Exec)
 configureTestTask(testGolden, '', '')
 configureTestTask(testClientGolden, '', 'Client')
+configureTestTask(testServerGolden, '', 'Server')
 configureTestTask(testLiteGolden, 'Lite', '')
+configureTestTask(testLiteClientGolden, 'Lite', 'Client')
+configureTestTask(testLiteServerGolden, 'Lite', 'Server')

@@ -881,13 +881,12 @@ static void PrintServer(const ServiceDescriptor* service,
   } else {
     p->Print(
         *vars,
-        "final $Flux$<$Payload$> publisher = $Flux$.$from$(payloads);\n"
-        "return publisher.$next$().$flatMap$(new $Function$<$Payload$, $Publisher$<? extends $MessageLite$>>() {\n");
+        "return new $SwitchTransform$<$Payload$, $MessageLite$>(payloads, new $BiFunction$<$Payload$, $Flux$<? extends $Payload$>, $Publisher$<? extends $MessageLite$>>() {\n");
     p->Indent();
     p->Print(
         *vars,
         "@$Override$\n"
-        "public $Publisher$<? extends $MessageLite$> apply($Payload$ payload) {\n");
+        "public $Publisher$<? extends $MessageLite$> apply($Payload$ payload, $Flux$<? extends $Payload$> publisher) {\n");
     p->Indent();
     p->Print(
         *vars,
@@ -1143,9 +1142,9 @@ void GenerateServer(const ServiceDescriptor* service,
   vars["Flux"] = "reactor.core.publisher.Flux";
   vars["Mono"] = "reactor.core.publisher.Mono";
   vars["from"] = "from";
-  vars["next"] = "next";
   vars["flatMap"] = "flatMapMany";
   vars["Function"] = "java.util.function.Function";
+  vars["BiFunction"] = "java.util.function.BiFunction";
   vars["Override"] = "java.lang.Override";
   vars["Publisher"] = "org.reactivestreams.Publisher";
   vars["Generated"] = "javax.annotation.Generated";
@@ -1154,6 +1153,7 @@ void GenerateServer(const ServiceDescriptor* service,
   vars["PayloadImpl"] = "io.rsocket.util.PayloadImpl";
   vars["ProteusService"] = "io.netifi.proteus.ProteusService";
   vars["ProteusMetadata"] = "io.netifi.proteus.frames.ProteusMetadata";
+  vars["SwitchTransform"] = "io.netifi.proteus.rs.SwitchTransform";
   vars["ByteBuf"] = "io.netty.buffer.ByteBuf";
   vars["Unpooled"] = "io.netty.buffer.Unpooled";
   vars["ByteString"] = "com.google.protobuf.ByteString";

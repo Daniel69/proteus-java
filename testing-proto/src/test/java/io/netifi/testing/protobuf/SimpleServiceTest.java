@@ -6,7 +6,6 @@ import io.rsocket.transport.netty.client.TcpClientTransport;
 import io.rsocket.transport.netty.server.TcpServerTransport;
 import org.junit.Assert;
 import org.junit.BeforeClass;
-import org.junit.Ignore;
 import org.junit.Test;
 import org.reactivestreams.Publisher;
 import reactor.core.publisher.Flux;
@@ -72,7 +71,6 @@ public class SimpleServiceTest {
   }
   
   @Test() // timeout = 3_000)
-  @Ignore
   public void testClientStreamingRpc() {
     SimpleServiceClient client = new SimpleServiceClient(rSocket);
 
@@ -87,7 +85,6 @@ public class SimpleServiceTest {
   }
   
   @Test() // timeout = 3_000)
-  @Ignore
   public void testBidiStreamingRpc() {
     SimpleServiceClient client = new SimpleServiceClient(rSocket);
     

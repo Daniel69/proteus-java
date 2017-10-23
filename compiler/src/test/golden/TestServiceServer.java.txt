@@ -76,10 +76,9 @@ public final class TestServiceServer implements io.netifi.proteus.ProteusService
 
   @java.lang.Override
   public reactor.core.publisher.Flux<io.rsocket.Payload> requestChannel(org.reactivestreams.Publisher<io.rsocket.Payload> payloads) {
-    final reactor.core.publisher.Flux<io.rsocket.Payload> publisher = reactor.core.publisher.Flux.from(payloads);
-    return publisher.next().flatMapMany(new java.util.function.Function<io.rsocket.Payload, org.reactivestreams.Publisher<? extends com.google.protobuf.MessageLite>>() {
+    return new io.netifi.proteus.rs.SwitchTransform<io.rsocket.Payload, com.google.protobuf.MessageLite>(payloads, new java.util.function.BiFunction<io.rsocket.Payload, reactor.core.publisher.Flux<? extends io.rsocket.Payload>, org.reactivestreams.Publisher<? extends com.google.protobuf.MessageLite>>() {
       @java.lang.Override
-      public org.reactivestreams.Publisher<? extends com.google.protobuf.MessageLite> apply(io.rsocket.Payload payload) {
+      public org.reactivestreams.Publisher<? extends com.google.protobuf.MessageLite> apply(io.rsocket.Payload payload, reactor.core.publisher.Flux<? extends io.rsocket.Payload> publisher) {
         try {
           io.netty.buffer.ByteBuf metadata = io.netty.buffer.Unpooled.wrappedBuffer(payload.getMetadata());
           switch(io.netifi.proteus.frames.ProteusMetadata.methodId(metadata)) {
