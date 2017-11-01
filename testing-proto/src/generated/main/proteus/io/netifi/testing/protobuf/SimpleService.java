@@ -11,10 +11,26 @@ package io.netifi.testing.protobuf;
 public interface SimpleService extends io.rsocket.Availability, io.rsocket.Closeable {
   int NAMESPACE_ID = 298608432;
   int SERVICE_ID = -1305494814;
+  int METHOD_FIRE_AND_FORGET = 238626589;
+  int METHOD_STREAM_ON_FIRE_AND_FORGET = -254431682;
   int METHOD_UNARY_RPC = -1434830019;
   int METHOD_CLIENT_STREAMING_RPC = 356703499;
   int METHOD_SERVER_STREAMING_RPC = -803409785;
   int METHOD_BIDI_STREAMING_RPC = -1207876110;
+
+  /**
+   * <pre>
+   * fire and forget
+   * </pre>
+   */
+  reactor.core.publisher.Mono<Void> fireAndForget(io.netifi.testing.protobuf.SimpleRequest message);
+
+  /**
+   * <pre>
+   * Streams when you send a Fire and Forget
+   * </pre>
+   */
+  reactor.core.publisher.Flux<io.netifi.testing.protobuf.SimpleResponse> streamOnFireAndForget(com.google.protobuf.Empty message);
 
   /**
    * <pre>

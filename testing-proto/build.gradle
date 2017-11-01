@@ -17,7 +17,7 @@ dependencies {
     compile project(':proteus-core'),
             libraries.protobuf
 
-    testCompile 'io.rsocket:rsocket-transport-netty:0.9.13'
+    testCompile 'io.rsocket:rsocket-transport-netty:0.9.15'
 
 }
 

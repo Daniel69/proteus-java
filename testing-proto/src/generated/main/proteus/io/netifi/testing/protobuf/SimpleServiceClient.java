@@ -11,6 +11,27 @@ public final class SimpleServiceClient implements SimpleService {
   }
 
   @java.lang.Override
+  public reactor.core.publisher.Mono<Void> fireAndForget(io.netifi.testing.protobuf.SimpleRequest message) {
+    final int length = io.netifi.proteus.frames.ProteusMetadata.computeLength();
+    io.netty.buffer.ByteBuf metadata = io.netty.buffer.ByteBufAllocator.DEFAULT.directBuffer(length);
+    io.netifi.proteus.frames.ProteusMetadata.encode(metadata, SimpleService.NAMESPACE_ID, SimpleService.SERVICE_ID, SimpleService.METHOD_FIRE_AND_FORGET);
+    java.nio.ByteBuffer data = message.toByteString().asReadOnlyByteBuffer();
+
+    return rSocket.fireAndForget(new io.rsocket.util.PayloadImpl(data, metadata.nioBuffer(0, length)));
+  }
+
+  @java.lang.Override
+  public reactor.core.publisher.Flux<io.netifi.testing.protobuf.SimpleResponse> streamOnFireAndForget(com.google.protobuf.Empty message) {
+    final int length = io.netifi.proteus.frames.ProteusMetadata.computeLength();
+    io.netty.buffer.ByteBuf metadata = io.netty.buffer.ByteBufAllocator.DEFAULT.directBuffer(length);
+    io.netifi.proteus.frames.ProteusMetadata.encode(metadata, SimpleService.NAMESPACE_ID, SimpleService.SERVICE_ID, SimpleService.METHOD_STREAM_ON_FIRE_AND_FORGET);
+    java.nio.ByteBuffer data = message.toByteString().asReadOnlyByteBuffer();
+
+    return rSocket.requestStream(new io.rsocket.util.PayloadImpl(data, metadata.nioBuffer(0, length)))
+      .map(deserializer(io.netifi.testing.protobuf.SimpleResponse.parser()));
+  }
+
+  @java.lang.Override
   public reactor.core.publisher.Mono<io.netifi.testing.protobuf.SimpleResponse> unaryRpc(io.netifi.testing.protobuf.SimpleRequest message) {
     final int length = io.netifi.proteus.frames.ProteusMetadata.computeLength();
     io.netty.buffer.ByteBuf metadata = io.netty.buffer.ByteBufAllocator.DEFAULT.directBuffer(length);

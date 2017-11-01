@@ -22,7 +22,20 @@ public final class SimpleServiceServer implements io.netifi.proteus.ProteusServi
 
   @java.lang.Override
   public reactor.core.publisher.Mono<Void> fireAndForget(io.rsocket.Payload payload) {
-    return reactor.core.publisher.Mono.error(new UnsupportedOperationException("Fire and forget not implemented."));
+    try {
+      io.netty.buffer.ByteBuf metadata = io.netty.buffer.Unpooled.wrappedBuffer(payload.getMetadata());
+      switch(io.netifi.proteus.frames.ProteusMetadata.methodId(metadata)) {
+        case SimpleService.METHOD_FIRE_AND_FORGET: {
+          com.google.protobuf.ByteString data = com.google.protobuf.UnsafeByteOperations.unsafeWrap(payload.getData());
+          return service.fireAndForget(io.netifi.testing.protobuf.SimpleRequest.parseFrom(data));
+        }
+        default: {
+          return reactor.core.publisher.Mono.error(new UnsupportedOperationException());
+        }
+      }
+    } catch (Throwable t) {
+      return reactor.core.publisher.Mono.error(t);
+    }
   }
 
   @java.lang.Override
@@ -48,6 +61,10 @@ public final class SimpleServiceServer implements io.netifi.proteus.ProteusServi
     try {
       io.netty.buffer.ByteBuf metadata = io.netty.buffer.Unpooled.wrappedBuffer(payload.getMetadata());
       switch(io.netifi.proteus.frames.ProteusMetadata.methodId(metadata)) {
+        case SimpleService.METHOD_STREAM_ON_FIRE_AND_FORGET: {
+          com.google.protobuf.ByteString data = com.google.protobuf.UnsafeByteOperations.unsafeWrap(payload.getData());
+          return service.streamOnFireAndForget(com.google.protobuf.Empty.parseFrom(data)).map(serializer);
+        }
         case SimpleService.METHOD_SERVER_STREAMING_RPC: {
           com.google.protobuf.ByteString data = com.google.protobuf.UnsafeByteOperations.unsafeWrap(payload.getData());
           return service.serverStreamingRpc(io.netifi.testing.protobuf.SimpleRequest.parseFrom(data)).map(serializer);
@@ -63,9 +80,9 @@ public final class SimpleServiceServer implements io.netifi.proteus.ProteusServi
 
   @java.lang.Override
   public reactor.core.publisher.Flux<io.rsocket.Payload> requestChannel(org.reactivestreams.Publisher<io.rsocket.Payload> payloads) {
-    return new io.rsocket.internal.SwitchTransform<io.rsocket.Payload, com.google.protobuf.MessageLite>(payloads, new java.util.function.BiFunction<io.rsocket.Payload, reactor.core.publisher.Flux<? extends io.rsocket.Payload>, org.reactivestreams.Publisher<? extends com.google.protobuf.MessageLite>>() {
+    return new io.rsocket.internal.SwitchTransform<io.rsocket.Payload, com.google.protobuf.MessageLite>(payloads, new java.util.function.BiFunction<io.rsocket.Payload, reactor.core.publisher.Flux<io.rsocket.Payload>, org.reactivestreams.Publisher<? extends com.google.protobuf.MessageLite>>() {
       @java.lang.Override
-      public org.reactivestreams.Publisher<? extends com.google.protobuf.MessageLite> apply(io.rsocket.Payload payload, reactor.core.publisher.Flux<? extends io.rsocket.Payload> publisher) {
+      public org.reactivestreams.Publisher<? extends com.google.protobuf.MessageLite> apply(io.rsocket.Payload payload, reactor.core.publisher.Flux<io.rsocket.Payload> publisher) {
         try {
           io.netty.buffer.ByteBuf metadata = io.netty.buffer.Unpooled.wrappedBuffer(payload.getMetadata());
           switch(io.netifi.proteus.frames.ProteusMetadata.methodId(metadata)) {

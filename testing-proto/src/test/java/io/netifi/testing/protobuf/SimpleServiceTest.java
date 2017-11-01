@@ -1,5 +1,6 @@
 package io.netifi.testing.protobuf;
 
+import com.google.protobuf.Empty;
 import io.rsocket.RSocket;
 import io.rsocket.RSocketFactory;
 import io.rsocket.transport.netty.client.TcpClientTransport;
@@ -8,11 +9,13 @@ import org.junit.Assert;
 import org.junit.BeforeClass;
 import org.junit.Test;
 import org.reactivestreams.Publisher;
+import reactor.core.publisher.EmitterProcessor;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
 import java.time.Duration;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Function;
 
@@ -101,7 +104,41 @@ public class SimpleServiceTest {
     System.out.println(response.getResponseMessage());
   }
 
+  @Test
+  public void testFireAndForget() throws Exception {
+    int count = 1000;
+    CountDownLatch latch = new CountDownLatch(count);
+    SimpleServiceClient client = new SimpleServiceClient(rSocket);
+    client
+        .streamOnFireAndForget(Empty.getDefaultInstance())
+        .subscribe(simpleResponse -> latch.countDown());
+    Flux.range(1, count)
+        .flatMap(
+            i ->
+                client.fireAndForget(
+                    SimpleRequest.newBuilder().setRequestMessage("fire -> " + i).build()))
+        .subscribe();
+    latch.await();
+  }
+
   static class DefaultSimpleService implements SimpleService {
+    EmitterProcessor<SimpleRequest> messages = EmitterProcessor.create();
+
+    @Override
+    public Mono<Void> fireAndForget(SimpleRequest message) {
+      messages.onNext(message);
+      return Mono.empty();
+    }
+
+    @Override
+    public Flux<SimpleResponse> streamOnFireAndForget(Empty message) {
+      return messages.map(
+          simpleRequest ->
+              SimpleResponse.newBuilder()
+                  .setResponseMessage("got fire and forget -> " + simpleRequest.getRequestMessage())
+                  .build());
+    }
+
     @Override
     public Mono<SimpleResponse> unaryRpc(SimpleRequest message) {
       return Mono.fromCallable(

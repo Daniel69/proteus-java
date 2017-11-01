@@ -881,12 +881,12 @@ static void PrintServer(const ServiceDescriptor* service,
   } else {
     p->Print(
         *vars,
-        "return new $SwitchTransform$<$Payload$, $MessageLite$>(payloads, new $BiFunction$<$Payload$, $Flux$<? extends $Payload$>, $Publisher$<? extends $MessageLite$>>() {\n");
+        "return new $SwitchTransform$<$Payload$, $MessageLite$>(payloads, new $BiFunction$<$Payload$, $Flux$<$Payload$>, $Publisher$<? extends $MessageLite$>>() {\n");
     p->Indent();
     p->Print(
         *vars,
         "@$Override$\n"
-        "public $Publisher$<? extends $MessageLite$> apply($Payload$ payload, $Flux$<? extends $Payload$> publisher) {\n");
+        "public $Publisher$<? extends $MessageLite$> apply($Payload$ payload, $Flux$<$Payload$> publisher) {\n");
     p->Indent();
     p->Print(
         *vars,

@@ -34,20 +34,25 @@ public final class SimpleServiceProto {
   static {
     java.lang.String[] descriptorData = {
       "\n.io/netifi/testing/protobuf/simpleservi" +
-      "ce.proto\022\021io.netifi.testing\"\'\n\rSimpleReq" +
-      "uest\022\026\n\016requestMessage\030\001 \001(\t\")\n\016SimpleRe" +
-      "sponse\022\027\n\017responseMessage\030\001 \001(\t2\377\002\n\rSimp" +
-      "leService\022Q\n\010UnaryRpc\022 .io.netifi.testin" +
-      "g.SimpleRequest\032!.io.netifi.testing.Simp" +
-      "leResponse\"\000\022]\n\022ClientStreamingRpc\022 .io." +
-      "netifi.testing.SimpleRequest\032!.io.netifi" +
-      ".testing.SimpleResponse\"\000(\001\022]\n\022ServerStr" +
-      "eamingRpc\022 .io.netifi.testing.SimpleRequ",
-      "est\032!.io.netifi.testing.SimpleResponse\"\000" +
-      "0\001\022]\n\020BidiStreamingRpc\022 .io.netifi.testi" +
-      "ng.SimpleRequest\032!.io.netifi.testing.Sim" +
-      "pleResponse\"\000(\0010\001B2\n\032io.netifi.testing.p" +
-      "rotobufB\022SimpleServiceProtoP\001b\006proto3"
+      "ce.proto\022\021io.netifi.testing\032\033google/prot" +
+      "obuf/empty.proto\"\'\n\rSimpleRequest\022\026\n\016req" +
+      "uestMessage\030\001 \001(\t\")\n\016SimpleResponse\022\027\n\017r" +
+      "esponseMessage\030\001 \001(\t2\244\004\n\rSimpleService\022K" +
+      "\n\rFireAndForget\022 .io.netifi.testing.Simp" +
+      "leRequest\032\026.google.protobuf.Empty\"\000\022V\n\025S" +
+      "treamOnFireAndForget\022\026.google.protobuf.E" +
+      "mpty\032!.io.netifi.testing.SimpleResponse\"" +
+      "\0000\001\022Q\n\010UnaryRpc\022 .io.netifi.testing.Simp",
+      "leRequest\032!.io.netifi.testing.SimpleResp" +
+      "onse\"\000\022]\n\022ClientStreamingRpc\022 .io.netifi" +
+      ".testing.SimpleRequest\032!.io.netifi.testi" +
+      "ng.SimpleResponse\"\000(\001\022]\n\022ServerStreaming" +
+      "Rpc\022 .io.netifi.testing.SimpleRequest\032!." +
+      "io.netifi.testing.SimpleResponse\"\0000\001\022]\n\020" +
+      "BidiStreamingRpc\022 .io.netifi.testing.Sim" +
+      "pleRequest\032!.io.netifi.testing.SimpleRes" +
+      "ponse\"\000(\0010\001B2\n\032io.netifi.testing.protobu" +
+      "fB\022SimpleServiceProtoP\001b\006proto3"
     };
     com.google.protobuf.Descriptors.FileDescriptor.InternalDescriptorAssigner assigner =
         new com.google.protobuf.Descriptors.FileDescriptor.    InternalDescriptorAssigner() {
@@ -60,6 +65,7 @@ public final class SimpleServiceProto {
     com.google.protobuf.Descriptors.FileDescriptor
       .internalBuildGeneratedFileFrom(descriptorData,
         new com.google.protobuf.Descriptors.FileDescriptor[] {
+          com.google.protobuf.EmptyProto.getDescriptor(),
         }, assigner);
     internal_static_io_netifi_testing_SimpleRequest_descriptor =
       getDescriptor().getMessageTypes().get(0);
@@ -73,6 +79,7 @@ public final class SimpleServiceProto {
       com.google.protobuf.GeneratedMessageV3.FieldAccessorTable(
         internal_static_io_netifi_testing_SimpleResponse_descriptor,
         new java.lang.String[] { "ResponseMessage", });
+    com.google.protobuf.EmptyProto.getDescriptor();
   }
 
   // @@protoc_insertion_point(outer_class_scope)
