@@ -101,7 +101,7 @@ public class RequestHandlingRSocket implements RSocket {
         int serviceId = ProteusMetadata.serviceId(metadata);
         ProteusService proteusService = registeredServices.get(namespaceId, serviceId);
 
-        return proteusService.requestChannel((Flux<Payload>)publisher);
+        return proteusService.requestChannel(payload, publisher);
       }
     });
   }

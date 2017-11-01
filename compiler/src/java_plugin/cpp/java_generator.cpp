@@ -872,22 +872,13 @@ static void PrintServer(const ServiceDescriptor* service,
   p->Print(
       *vars,
       "@$Override$\n"
-      "public $Flux$<$Payload$> requestChannel($Publisher$<$Payload$> payloads) {\n");
+      "public $Flux$<$Payload$> requestChannel($Payload$ payload, $Flux$<$Payload$> publisher) {\n");
   p->Indent();
   if (request_channel.empty()) {
     p->Print(
         *vars,
         "return $Flux$.error(new UnsupportedOperationException(\"Request-Channel not implemented.\"));\n");
   } else {
-    p->Print(
-        *vars,
-        "return new $SwitchTransform$<$Payload$, $MessageLite$>(payloads, new $BiFunction$<$Payload$, $Flux$<$Payload$>, $Publisher$<? extends $MessageLite$>>() {\n");
-    p->Indent();
-    p->Print(
-        *vars,
-        "@$Override$\n"
-        "public $Publisher$<? extends $MessageLite$> apply($Payload$ payload, $Flux$<$Payload$> publisher) {\n");
-    p->Indent();
     p->Print(
         *vars,
         "try {\n");
@@ -915,9 +906,16 @@ static void PrintServer(const ServiceDescriptor* service,
           *vars,
           "publisher.map(deserializer($input_type$.parser()));\n");
       p->Outdent();
-      p->Print(
-          *vars,
-          "return service.$lower_method_name$(messages);\n");
+      if (method->server_streaming()) {
+        p->Print(
+            *vars,
+            "return service.$lower_method_name$(messages).map(serializer);\n");
+      } else {
+        p->Print(
+            *vars,
+            "return service.$lower_method_name$(messages).map(serializer).$flux$();\n");
+      }
+
       p->Outdent();
       p->Print("}\n");
     }
@@ -940,15 +938,41 @@ static void PrintServer(const ServiceDescriptor* service,
         "return $Flux$.error(t);\n");
     p->Outdent();
     p->Print("}\n");
-    p->Outdent();
-    p->Print("}\n");
+  }
+  p->Outdent();
+  p->Print("};\n\n");
+
+  p->Print(
+      *vars,
+      "@$Override$\n"
+      "public $Flux$<$Payload$> requestChannel($Publisher$<$Payload$> payloads) {\n");
+  p->Indent();
+  if (request_channel.empty()) {
+    p->Print(
+        *vars,
+        "return $Flux$.error(new UnsupportedOperationException(\"Request-Channel not implemented.\"));\n");
+  } else {
+    p->Print(
+        *vars,
+        "return new $SwitchTransform$<$Payload$, $Payload$>(payloads, new $BiFunction$<$Payload$, $Flux$<$Payload$>, $Publisher$<? extends $Payload$>>() {\n");
+    p->Indent();
+    p->Print(
+        *vars,
+        "@$Override$\n"
+        "public $Publisher$<$Payload$> apply($Payload$ payload, $Flux$<$Payload$> publisher) {\n");
+    p->Indent();
+    p->Print(
+        *vars,
+        "return requestChannel(payload, publisher);\n");
     p->Outdent();
     p->Print(
         *vars,
-        "}).map(serializer);\n");
+        "}\n");
   }
   p->Outdent();
-  p->Print("}\n\n");
+  p->Print("});\n");
+  p->Outdent();
+  p->Print("};\n\n");
 
   // Metadata-Push
   p->Print(
@@ -1142,6 +1166,7 @@ void GenerateServer(const ServiceDescriptor* service,
   vars["Flux"] = "reactor.core.publisher.Flux";
   vars["Mono"] = "reactor.core.publisher.Mono";
   vars["from"] = "from";
+  vars["flux"] = "flux";
   vars["flatMap"] = "flatMapMany";
   vars["Function"] = "java.util.function.Function";
   vars["BiFunction"] = "java.util.function.BiFunction";

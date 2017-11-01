@@ -79,33 +79,38 @@ public final class SimpleServiceServer implements io.netifi.proteus.ProteusServi
   }
 
   @java.lang.Override
-  public reactor.core.publisher.Flux<io.rsocket.Payload> requestChannel(org.reactivestreams.Publisher<io.rsocket.Payload> payloads) {
-    return new io.rsocket.internal.SwitchTransform<io.rsocket.Payload, com.google.protobuf.MessageLite>(payloads, new java.util.function.BiFunction<io.rsocket.Payload, reactor.core.publisher.Flux<io.rsocket.Payload>, org.reactivestreams.Publisher<? extends com.google.protobuf.MessageLite>>() {
-      @java.lang.Override
-      public org.reactivestreams.Publisher<? extends com.google.protobuf.MessageLite> apply(io.rsocket.Payload payload, reactor.core.publisher.Flux<io.rsocket.Payload> publisher) {
-        try {
-          io.netty.buffer.ByteBuf metadata = io.netty.buffer.Unpooled.wrappedBuffer(payload.getMetadata());
-          switch(io.netifi.proteus.frames.ProteusMetadata.methodId(metadata)) {
-            case SimpleService.METHOD_CLIENT_STREAMING_RPC: {
-              reactor.core.publisher.Flux<io.netifi.testing.protobuf.SimpleRequest> messages =
-                publisher.map(deserializer(io.netifi.testing.protobuf.SimpleRequest.parser()));
-              return service.clientStreamingRpc(messages);
-            }
-            case SimpleService.METHOD_BIDI_STREAMING_RPC: {
-              reactor.core.publisher.Flux<io.netifi.testing.protobuf.SimpleRequest> messages =
-                publisher.map(deserializer(io.netifi.testing.protobuf.SimpleRequest.parser()));
-              return service.bidiStreamingRpc(messages);
-            }
-            default: {
-              return reactor.core.publisher.Flux.error(new UnsupportedOperationException());
-            }
-          }
-        } catch (Throwable t) {
-          return reactor.core.publisher.Flux.error(t);
+  public reactor.core.publisher.Flux<io.rsocket.Payload> requestChannel(io.rsocket.Payload payload, reactor.core.publisher.Flux<io.rsocket.Payload> publisher) {
+    try {
+      io.netty.buffer.ByteBuf metadata = io.netty.buffer.Unpooled.wrappedBuffer(payload.getMetadata());
+      switch(io.netifi.proteus.frames.ProteusMetadata.methodId(metadata)) {
+        case SimpleService.METHOD_CLIENT_STREAMING_RPC: {
+          reactor.core.publisher.Flux<io.netifi.testing.protobuf.SimpleRequest> messages =
+            publisher.map(deserializer(io.netifi.testing.protobuf.SimpleRequest.parser()));
+          return service.clientStreamingRpc(messages).map(serializer).flux();
+        }
+        case SimpleService.METHOD_BIDI_STREAMING_RPC: {
+          reactor.core.publisher.Flux<io.netifi.testing.protobuf.SimpleRequest> messages =
+            publisher.map(deserializer(io.netifi.testing.protobuf.SimpleRequest.parser()));
+          return service.bidiStreamingRpc(messages).map(serializer);
+        }
+        default: {
+          return reactor.core.publisher.Flux.error(new UnsupportedOperationException());
         }
       }
-    }).map(serializer);
-  }
+    } catch (Throwable t) {
+      return reactor.core.publisher.Flux.error(t);
+    }
+  };
+
+  @java.lang.Override
+  public reactor.core.publisher.Flux<io.rsocket.Payload> requestChannel(org.reactivestreams.Publisher<io.rsocket.Payload> payloads) {
+    return new io.rsocket.internal.SwitchTransform<io.rsocket.Payload, io.rsocket.Payload>(payloads, new java.util.function.BiFunction<io.rsocket.Payload, reactor.core.publisher.Flux<io.rsocket.Payload>, org.reactivestreams.Publisher<? extends io.rsocket.Payload>>() {
+      @java.lang.Override
+      public org.reactivestreams.Publisher<io.rsocket.Payload> apply(io.rsocket.Payload payload, reactor.core.publisher.Flux<io.rsocket.Payload> publisher) {
+        return requestChannel(payload, publisher);
+      }
+    });
+  };
 
   @java.lang.Override
   public reactor.core.publisher.Mono<Void> metadataPush(io.rsocket.Payload payload) {
