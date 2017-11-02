@@ -6,7 +6,7 @@ package io.netifi.testing.integration;
  * </pre>
  */
 @javax.annotation.Generated(
-    value = "by Proteus proto compiler (version 0.2.0)",
+    value = "by Proteus proto compiler (version 0.2.1)",
     comments = "Source: test.proto")
 public interface TestService extends io.rsocket.Availability, io.rsocket.Closeable {
   int NAMESPACE_ID = 298608432;

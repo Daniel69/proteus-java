@@ -5,6 +5,4 @@ targetCompatibility = 1.8
 
 dependencies {
     compile project(':proteus-core')
-
-    testCompile project(':proteus-testing')
 }

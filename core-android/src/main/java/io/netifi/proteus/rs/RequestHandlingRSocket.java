@@ -14,8 +14,6 @@ import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 import reactor.core.publisher.MonoProcessor;
 
-import java.util.function.BiFunction;
-
 public class RequestHandlingRSocket implements RSocket {
   private final BiInt2ObjectMap<ProteusService> registeredServices;
   private MonoProcessor<Void> onClose;
@@ -31,6 +29,16 @@ public class RequestHandlingRSocket implements RSocket {
     }
   }
 
+  public synchronized void addService(ProteusService service) {
+    int namespaceId = service.getNamespaceId();
+    int serviceId = service.getServiceId();
+    registeredServices.put(namespaceId, serviceId, service);
+  }
+
+  private synchronized ProteusService getService(int namespaceId, int serviceId) {
+    return registeredServices.get(namespaceId, serviceId);
+  }
+
   @Override
   public Mono<Void> fireAndForget(Payload payload) {
     try {
@@ -38,7 +46,7 @@ public class RequestHandlingRSocket implements RSocket {
       int namespaceId = ProteusMetadata.namespaceId(metadata);
       int serviceId = ProteusMetadata.serviceId(metadata);
 
-      ProteusService proteusService = registeredServices.get(namespaceId, serviceId);
+      ProteusService proteusService = getService(namespaceId, serviceId);
 
       if (proteusService == null) {
         return Mono.error(new ServiceNotFound(namespaceId, serviceId));
@@ -58,7 +66,7 @@ public class RequestHandlingRSocket implements RSocket {
       int namespaceId = ProteusMetadata.namespaceId(metadata);
       int serviceId = ProteusMetadata.serviceId(metadata);
 
-      ProteusService proteusService = registeredServices.get(namespaceId, serviceId);
+      ProteusService proteusService = getService(namespaceId, serviceId);
 
       if (proteusService == null) {
         return Mono.error(new ServiceNotFound(namespaceId, serviceId));
@@ -78,7 +86,7 @@ public class RequestHandlingRSocket implements RSocket {
       int namespaceId = ProteusMetadata.namespaceId(metadata);
       int serviceId = ProteusMetadata.serviceId(metadata);
 
-      ProteusService proteusService = registeredServices.get(namespaceId, serviceId);
+      ProteusService proteusService = getService(namespaceId, serviceId);
 
       if (proteusService == null) {
         return Flux.error(new ServiceNotFound(namespaceId, serviceId));
@@ -93,17 +101,22 @@ public class RequestHandlingRSocket implements RSocket {
 
   @Override
   public Flux<Payload> requestChannel(Publisher<Payload> payloads) {
-    return new SwitchTransform<>(payloads, new BiFunction<Payload, Flux<? extends Payload>, Publisher<? extends Payload>>() {
-      @Override
-      public Publisher<? extends Payload> apply(Payload payload, Flux<? extends Payload> publisher) {
-        ByteBuf metadata = Unpooled.wrappedBuffer(payload.getMetadata());
-        int namespaceId = ProteusMetadata.namespaceId(metadata);
-        int serviceId = ProteusMetadata.serviceId(metadata);
-        ProteusService proteusService = registeredServices.get(namespaceId, serviceId);
+    try {
+      SwitchTransform<Payload, Payload> switchTransform =
+          new SwitchTransform<>(
+              payloads,
+              (payload, flux) -> {
+                ByteBuf metadata = Unpooled.wrappedBuffer(payload.getMetadata());
+                int namespaceId = ProteusMetadata.namespaceId(metadata);
+                int serviceId = ProteusMetadata.serviceId(metadata);
+                ProteusService proteusService = getService(namespaceId, serviceId);
+                return proteusService.requestChannel((Publisher<Payload>) flux);
+              });
 
-        return proteusService.requestChannel(payload, publisher);
-      }
-    });
+      return switchTransform;
+    } catch (Throwable t) {
+      return Flux.error(t);
+    }
   }
 
   @Override
@@ -113,7 +126,7 @@ public class RequestHandlingRSocket implements RSocket {
       int namespaceId = ProteusMetadata.namespaceId(metadata);
       int serviceId = ProteusMetadata.serviceId(metadata);
 
-      ProteusService proteusService = registeredServices.get(namespaceId, serviceId);
+      ProteusService proteusService = getService(namespaceId, serviceId);
 
       if (proteusService == null) {
         return Mono.error(new ServiceNotFound(namespaceId, serviceId));

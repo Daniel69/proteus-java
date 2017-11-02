@@ -1,7 +1,6 @@
 rootProject.name = "proteus"
 include ":proteus-core"
 include ":proteus-core-java"
-include ":proteus-testing"
 include ":proteus-testing-proto"
 
 project(':proteus-core').projectDir = "$rootDir/core" as File
