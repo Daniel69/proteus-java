@@ -100,7 +100,7 @@ public final class SimpleServiceServer implements io.netifi.proteus.ProteusServi
     } catch (Throwable t) {
       return reactor.core.publisher.Flux.error(t);
     }
-  };
+  }
 
   @java.lang.Override
   public reactor.core.publisher.Flux<io.rsocket.Payload> requestChannel(org.reactivestreams.Publisher<io.rsocket.Payload> payloads) {
@@ -110,7 +110,7 @@ public final class SimpleServiceServer implements io.netifi.proteus.ProteusServi
         return requestChannel(payload, publisher);
       }
     });
-  };
+  }
 
   @java.lang.Override
   public reactor.core.publisher.Mono<Void> metadataPush(io.rsocket.Payload payload) {

@@ -940,7 +940,7 @@ static void PrintServer(const ServiceDescriptor* service,
     p->Print("}\n");
   }
   p->Outdent();
-  p->Print("};\n\n");
+  p->Print("}\n\n");
 
   p->Print(
       *vars,
@@ -965,14 +965,12 @@ static void PrintServer(const ServiceDescriptor* service,
         *vars,
         "return requestChannel(payload, publisher);\n");
     p->Outdent();
-    p->Print(
-        *vars,
-        "}\n");
+    p->Print("}\n");
+    p->Outdent();
+    p->Print("});\n");
   }
   p->Outdent();
-  p->Print("});\n");
-  p->Outdent();
-  p->Print("};\n\n");
+  p->Print("}\n\n");
 
   // Metadata-Push
   p->Print(

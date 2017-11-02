@@ -101,7 +101,7 @@ public final class TestServiceServer implements io.netifi.proteus.ProteusService
     } catch (Throwable t) {
       return reactor.core.publisher.Flux.error(t);
     }
-  };
+  }
 
   @java.lang.Override
   public reactor.core.publisher.Flux<io.rsocket.Payload> requestChannel(org.reactivestreams.Publisher<io.rsocket.Payload> payloads) {
@@ -111,7 +111,7 @@ public final class TestServiceServer implements io.netifi.proteus.ProteusService
         return requestChannel(payload, publisher);
       }
     });
-  };
+  }
 
   @java.lang.Override
   public reactor.core.publisher.Mono<Void> metadataPush(io.rsocket.Payload payload) {
