@@ -8,7 +8,7 @@ package io.netifi.testing.protobuf;
 @javax.annotation.Generated(
     value = "by Proteus proto compiler",
     comments = "Source: io/netifi/testing/protobuf/simpleservice.proto")
-public interface SimpleService extends io.rsocket.Availability, io.rsocket.Closeable {
+public interface SimpleService {
   int NAMESPACE_ID = 298608432;
   int SERVICE_ID = -1305494814;
   int METHOD_FIRE_AND_FORGET = 238626589;

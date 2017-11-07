@@ -85,21 +85,6 @@ public final class SimpleServiceClient implements SimpleService {
     })).map(deserializer(io.netifi.testing.protobuf.SimpleResponse.parser()));
   }
 
-  @java.lang.Override
-  public double availability() {
-    return rSocket.availability();
-  }
-
-  @java.lang.Override
-  public reactor.core.publisher.Mono<Void> close() {
-    return rSocket.close();
-  }
-
-  @java.lang.Override
-  public reactor.core.publisher.Mono<Void> onClose() {
-    return rSocket.onClose();
-  }
-
   private static <T> java.util.function.Function<io.rsocket.Payload, T> deserializer(final com.google.protobuf.Parser<T> parser) {
     return new java.util.function.Function<io.rsocket.Payload, T>() {
       @java.lang.Override

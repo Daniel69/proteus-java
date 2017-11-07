@@ -1,6 +1,7 @@
 package io.netifi.testing.protobuf;
 
 import com.google.protobuf.Empty;
+import io.netifi.proteus.rs.RequestHandlingRSocket;
 import io.rsocket.RSocket;
 import io.rsocket.RSocketFactory;
 import io.rsocket.transport.netty.client.TcpClientTransport;
@@ -28,7 +29,7 @@ public class SimpleServiceTest {
     RSocketFactory.receive()
         .acceptor(
             (setup, sendingSocket) ->
-                Mono.just(new SimpleServiceServer(new DefaultSimpleService())))
+                Mono.just(new RequestHandlingRSocket(new SimpleServiceServer(new DefaultSimpleService()))))
         .transport(TcpServerTransport.create(8801))
         .start()
         .block();
@@ -196,21 +197,6 @@ public class SimpleServiceTest {
     @Override
     public Flux<SimpleResponse> bidiStreamingRpc(Publisher<SimpleRequest> messages) {
       return Flux.from(messages).flatMap(this::unaryRpc);
-    }
-
-    @Override
-    public double availability() {
-      return 1.0;
-    }
-
-    @Override
-    public Mono<Void> close() {
-      return Mono.empty();
-    }
-
-    @Override
-    public Mono<Void> onClose() {
-      return Mono.empty();
     }
   }
 }

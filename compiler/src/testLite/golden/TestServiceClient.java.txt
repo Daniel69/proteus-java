@@ -1,7 +1,7 @@
 package io.netifi.testing.integration;
 
 @javax.annotation.Generated(
-    value = "by Proteus proto compiler (version 0.2.1)",
+    value = "by Proteus proto compiler (version 0.2.2)",
     comments = "Source: test.proto")
 public final class TestServiceClient implements TestService {
   private final io.rsocket.RSocket rSocket;
@@ -88,21 +88,6 @@ public final class TestServiceClient implements TestService {
         return new io.rsocket.util.PayloadImpl(data, metadata.nioBuffer(0, length));
       }
     })).map(deserializer(io.netifi.testing.integration.Test.StreamingOutputCallResponse.parser()));
-  }
-
-  @java.lang.Override
-  public double availability() {
-    return rSocket.availability();
-  }
-
-  @java.lang.Override
-  public reactor.core.publisher.Mono<Void> close() {
-    return rSocket.close();
-  }
-
-  @java.lang.Override
-  public reactor.core.publisher.Mono<Void> onClose() {
-    return rSocket.onClose();
   }
 
   private static <T> java.util.function.Function<io.rsocket.Payload, T> deserializer(final com.google.protobuf.Parser<T> parser) {

@@ -26,6 +26,7 @@ import java.util.Arrays;
  */
 public class BiInt2ObjectMap<V> implements Serializable {
   private static final int MIN_CAPACITY = 8;
+  private static final float DEFAULT_LOAD_FACTOR = 0.55f;
   private final float loadFactor;
   private int resizeThreshold;
   private int size;
@@ -34,7 +35,7 @@ public class BiInt2ObjectMap<V> implements Serializable {
 
   /** Construct an empty map */
   public BiInt2ObjectMap() {
-    this(MIN_CAPACITY, Hashing.DEFAULT_LOAD_FACTOR);
+    this(MIN_CAPACITY, DEFAULT_LOAD_FACTOR);
   }
   /**
    * Construct a map that sets it initial capacity and load factor.

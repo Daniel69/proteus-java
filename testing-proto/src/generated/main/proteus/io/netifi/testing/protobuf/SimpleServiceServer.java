@@ -3,7 +3,7 @@ package io.netifi.testing.protobuf;
 @javax.annotation.Generated(
     value = "by Proteus proto compiler",
     comments = "Source: io/netifi/testing/protobuf/simpleservice.proto")
-public final class SimpleServiceServer implements io.netifi.proteus.ProteusService {
+public final class SimpleServiceServer extends io.netifi.proteus.AbstractProteusService {
   private final SimpleService service;
 
   public SimpleServiceServer(SimpleService service) {
@@ -110,26 +110,6 @@ public final class SimpleServiceServer implements io.netifi.proteus.ProteusServi
         return requestChannel(payload, publisher);
       }
     });
-  }
-
-  @java.lang.Override
-  public reactor.core.publisher.Mono<Void> metadataPush(io.rsocket.Payload payload) {
-    return reactor.core.publisher.Mono.error(new UnsupportedOperationException("Metadata-Push not implemented."));
-  }
-
-  @java.lang.Override
-  public double availability() {
-    return service.availability();
-  }
-
-  @java.lang.Override
-  public reactor.core.publisher.Mono<Void> close() {
-    return service.close();
-  }
-
-  @java.lang.Override
-  public reactor.core.publisher.Mono<Void> onClose() {
-    return service.onClose();
   }
 
   private static final java.util.function.Function<com.google.protobuf.MessageLite, io.rsocket.Payload> serializer =

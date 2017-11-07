@@ -6,21 +6,18 @@ import io.netifi.proteus.exception.ServiceNotFound;
 import io.netifi.proteus.frames.ProteusMetadata;
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.Unpooled;
+import io.rsocket.AbstractRSocket;
 import io.rsocket.Payload;
-import io.rsocket.RSocket;
 import io.rsocket.internal.SwitchTransform;
 import org.reactivestreams.Publisher;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
-import reactor.core.publisher.MonoProcessor;
 
-public class RequestHandlingRSocket implements RSocket {
+public class RequestHandlingRSocket extends AbstractRSocket {
   private final BiInt2ObjectMap<ProteusService> registeredServices;
-  private MonoProcessor<Void> onClose;
 
   public RequestHandlingRSocket(ProteusService... services) {
-    this.onClose = MonoProcessor.create();
-    this.registeredServices = new BiInt2ObjectMap<ProteusService>();
+    this.registeredServices = new BiInt2ObjectMap<>();
 
     for (ProteusService proteusService : services) {
       int namespaceId = proteusService.getNamespaceId();
@@ -101,27 +98,7 @@ public class RequestHandlingRSocket implements RSocket {
 
   @Override
   public Flux<Payload> requestChannel(Publisher<Payload> payloads) {
-    try {
-      SwitchTransform<Payload, Payload> switchTransform =
-          new SwitchTransform<>(
-              payloads,
-              (payload, flux) -> {
-                ByteBuf metadata = Unpooled.wrappedBuffer(payload.getMetadata());
-                int namespaceId = ProteusMetadata.namespaceId(metadata);
-                int serviceId = ProteusMetadata.serviceId(metadata);
-                ProteusService proteusService = getService(namespaceId, serviceId);
-                return proteusService.requestChannel((Publisher<Payload>) flux);
-              });
-
-      return switchTransform;
-    } catch (Throwable t) {
-      return Flux.error(t);
-    }
-  }
-
-  @Override
-  public Mono<Void> metadataPush(Payload payload) {
-    try {
+    return new SwitchTransform<>(payloads, (payload, flux) -> {
       ByteBuf metadata = Unpooled.wrappedBuffer(payload.getMetadata());
       int namespaceId = ProteusMetadata.namespaceId(metadata);
       int serviceId = ProteusMetadata.serviceId(metadata);
@@ -129,42 +106,10 @@ public class RequestHandlingRSocket implements RSocket {
       ProteusService proteusService = getService(namespaceId, serviceId);
 
       if (proteusService == null) {
-        return Mono.error(new ServiceNotFound(namespaceId, serviceId));
+        return Flux.error(new ServiceNotFound(namespaceId, serviceId));
       }
 
-      return proteusService.metadataPush(payload);
-
-    } catch (Throwable t) {
-      return Mono.error(t);
-    }
-  }
-
-  @Override
-  public Mono<Void> onClose() {
-    return onClose;
-  }
-
-  @Override
-  public Mono<Void> close() {
-    return Mono.fromRunnable(
-        new Runnable() {
-          @Override
-          public void run() {
-            onClose.onComplete();
-
-            registeredServices.forEach(
-                new BiInt2ObjectMap.EntryConsumer<ProteusService>() {
-                  @Override
-                  public void accept(ProteusService service) {
-                    service.close().subscribe();
-                  }
-                });
-          }
-        });
-  }
-
-  @Override
-  public double availability() {
-    return 1.0;
+      return proteusService.requestChannel(payload, flux);
+    });
   }
 }

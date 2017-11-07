@@ -36,7 +36,7 @@ using std::to_string;
 const int32_t Prime = 0x01000193; //   16777619
 const int32_t Seed  = 0x811C9DC5; // 2166136261
 
-// FNV-1 hash
+// FNV-1a hash
 static inline int32_t Hash(const string& word, int32_t hash = Seed) {
   const unsigned char* ptr = reinterpret_cast<const unsigned char *>(word.c_str());
   while (*ptr)
@@ -328,7 +328,7 @@ static void PrintInterface(const ServiceDescriptor* service,
       "@$Generated$(\n"
       "    value = \"by Proteus proto compiler$proteus_version$\",\n"
       "    comments = \"Source: $file_name$\")\n"
-      "public interface $service_name$ extends $Availability$, $Closeable$ {\n");
+      "public interface $service_name$ {\n");
   p->Indent();
 
   // Service IDs
@@ -533,40 +533,6 @@ static void PrintClient(const ServiceDescriptor* service,
     }
   }
 
-  // Availability
-  p->Print(
-      *vars,
-      "@$Override$\n"
-      "public double availability() {\n");
-  p->Indent();
-  p->Print(
-      *vars,
-      "return rSocket.availability();\n");
-  p->Outdent();
-  p->Print("}\n\n");
-
-  // Closeable
-  p->Print(
-      *vars,
-      "@$Override$\n"
-      "public $Mono$<Void> close() {\n");
-  p->Indent();
-  p->Print(
-      *vars,
-      "return rSocket.close();\n");
-  p->Outdent();
-  p->Print("}\n\n");
-  p->Print(
-      *vars,
-      "@$Override$\n"
-      "public $Mono$<Void> onClose() {\n");
-  p->Indent();
-  p->Print(
-      *vars,
-      "return rSocket.onClose();\n");
-  p->Outdent();
-  p->Print("}\n\n");
-
   // Deserializer
   p->Print(
       *vars,
@@ -629,7 +595,7 @@ static void PrintServer(const ServiceDescriptor* service,
       "@$Generated$(\n"
       "    value = \"by Proteus proto compiler$proteus_version$\",\n"
       "    comments = \"Source: $file_name$\")\n"
-      "public final class $server_class_name$ implements $ProteusService$ {\n");
+      "public final class $server_class_name$ extends $AbstractProteusService$ {\n");
   p->Indent();
 
   p->Print(
@@ -972,52 +938,6 @@ static void PrintServer(const ServiceDescriptor* service,
   p->Outdent();
   p->Print("}\n\n");
 
-  // Metadata-Push
-  p->Print(
-      *vars,
-      "@$Override$\n"
-      "public $Mono$<Void> metadataPush($Payload$ payload) {\n");
-  p->Indent();
-  p->Print(
-      *vars,
-      "return $Mono$.error(new UnsupportedOperationException(\"Metadata-Push not implemented.\"));\n");
-  p->Outdent();
-  p->Print("}\n\n");
-
-  // Availability
-  p->Print(
-      *vars,
-      "@$Override$\n"
-      "public double availability() {\n");
-  p->Indent();
-  p->Print(
-      *vars,
-      "return service.availability();\n");
-  p->Outdent();
-  p->Print("}\n\n");
-
-  // Closeable
-  p->Print(
-      *vars,
-      "@$Override$\n"
-      "public $Mono$<Void> close() {\n");
-  p->Indent();
-  p->Print(
-      *vars,
-      "return service.close();\n");
-  p->Outdent();
-  p->Print("}\n\n");
-  p->Print(
-      *vars,
-      "@$Override$\n"
-      "public $Mono$<Void> onClose() {\n");
-  p->Indent();
-  p->Print(
-      *vars,
-      "return service.onClose();\n");
-  p->Outdent();
-  p->Print("}\n\n");
-
   // Serializer
   p->Print(
       *vars,
@@ -1093,8 +1013,6 @@ void GenerateInterface(const ServiceDescriptor* service,
   vars["Mono"] = "reactor.core.publisher.Mono";
   vars["Publisher"] = "org.reactivestreams.Publisher";
   vars["Generated"] = "javax.annotation.Generated";
-  vars["Availability"] = "io.rsocket.Availability";
-  vars["Closeable"] = "io.rsocket.Closeable";
 
   Printer printer(out, '$');
   string package_name = ServiceJavaPackage(service->file());
@@ -1175,7 +1093,7 @@ void GenerateServer(const ServiceDescriptor* service,
   vars["Payload"] = "io.rsocket.Payload";
   vars["PayloadImpl"] = "io.rsocket.util.PayloadImpl";
   vars["SwitchTransform"] = "io.rsocket.internal.SwitchTransform";
-  vars["ProteusService"] = "io.netifi.proteus.ProteusService";
+  vars["AbstractProteusService"] = "io.netifi.proteus.AbstractProteusService";
   vars["ProteusMetadata"] = "io.netifi.proteus.frames.ProteusMetadata";
   vars["ByteBuf"] = "io.netty.buffer.ByteBuf";
   vars["Unpooled"] = "io.netty.buffer.Unpooled";
