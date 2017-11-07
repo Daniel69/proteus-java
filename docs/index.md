@@ -14,10 +14,6 @@ Proteus's Java implementation is built using Reactive Streams compliant library 
 ### Back-pressure
 Proteus respects both RSocket and Reactive Stream backpresure. Backpressure is where the consumer of a stream sends the producer a message indicating how many requests it can handle. This allows Proteus reliable, and not become overwhelmed with too much demand. It also helps with tail latency preventing consumers from being over-loaded.
 
-## Prerequisites
-* JDK 1.8
-* Protobuf Compiler 3.x
-
 ## Interaction Models
 Proteus has 5 interaction rpc interaction models. They are modeled using a Protobuf 3 IDL. This section details the interaction models, and an example Protobuf rpc definition. The interaction models are request/response, request/stream, fire-and-forget, streaming request/one response, and streaming request/streaming response.
 
@@ -64,9 +60,54 @@ Sends a stream of request and stream of responses. This models a fully duplex in
 rpc StreamingRequestAndResponse (stream SimpleRequest) returns (stream SimpleResponse) {}
 ```
 
-## Documentation
+## Getting Started
+### Prerequisites
+* JDK 1.8
+* Gradle 2.x
+* Protobuf Compiler 3.x
 
+#### Installing Protobuf
+##### Mac OS
+For Mac users you can easily install the Protobuf compiler using Homebrew:
+```
+$ brew install protobuf
+```
+##### Ubuntu
+Ubuntu users can install Protobuf using apt-get:
+```
+$ sudo apt-get install libprotobuf-java protobuf-compiler
+```
 
+### Configuring Gradle
+Proteus Java uses a Protobuf plugin to generate application code. Add the following code to your project's gradle file so that it will generate code from your Protobuf IDL when your application is compiled.
+
+```
+protobuf {
+    protoc {
+        artifact = 'com.google.protobuf:protoc:3.4.0'
+    }
+    plugins {
+        proteus {
+            artifact = 'io.netifi.proteus:proteus-java:0.2.x'
+        }
+    }
+    generateProtoTasks {
+        all()*.plugins {
+            proteus {}
+        }
+    }
+}
+
+// If you use Intellij add this so it can find the generated classes
+idea {
+    module {
+        sourceDirs += file("${projectDir}/build/generated/source/proto/main/java");
+        sourceDirs += file("${projectDir}/build/generated/source/proto/main/proteus");
+        sourceDirs += file("${projectDir}/build/generated/source/proto/test/java");
+        sourceDirs += file("${projectDir}/build/generated/source/proto/test/proteus");
+    }
+}
+```
 
 ## Release Notes
 
