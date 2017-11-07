@@ -19,7 +19,7 @@ Proteus respects both RSocket and Reactive Stream backpresure. Backpressure is w
 * Protobuf Compiler 3.x
 
 ## Interaction Models
-Proteus has 5 interaction models. This section details the interaction models and how to model them in protobuf. They interaction models are request/response, request/stream, fire-and-forget, streaming request/one response, and streaming request/streaming response.
+Proteus has 5 interaction rpc interaction models. They are modeled using a Protobuf 3 IDL. This section details the interaction models, and an example Protobuf rpc definition. The interaction models are request/response, request/stream, fire-and-forget, streaming request/one response, and streaming request/streaming response.
 
 ### Request/Response
 Request response is analogous to a HTTP Rest call. A major difference is because this is non-blocking the caller can wait for the response for a very long time without blocking other requests on the same connection.
