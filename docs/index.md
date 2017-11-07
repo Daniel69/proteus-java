@@ -17,7 +17,7 @@ Proteus respects both RSocket and Reactive Stream backpresure. Backpressure is w
 ## Interaction Models
 Proteus has 5 interaction rpc interaction models. They are modeled using a Protobuf 3 IDL. This section details the interaction models, and an example Protobuf rpc definition. The interaction models are request/response, request/stream, fire-and-forget, streaming request/one response, and streaming request/streaming response.
 
-### Request/Response
+### Request / Response
 Request response is analogous to a HTTP Rest call. A major difference is because this is non-blocking the caller can wait for the response for a very long time without blocking other requests on the same connection.
 
 #### Protobuf
@@ -106,6 +106,45 @@ idea {
         sourceDirs += file("${projectDir}/build/generated/source/proto/test/java");
         sourceDirs += file("${projectDir}/build/generated/source/proto/test/proteus");
     }
+}
+```
+
+### Define a Protobuf
+After you have installed protobuf and configured gradle you need to create protobuf IDL to define your service. The following is a simple example that defines all the interaction models:
+```
+syntax = "proto3";
+
+package io.netifi.testing;
+
+import "google/protobuf/empty.proto";
+
+option java_package = "io.netifi.testing.protobuf";
+option java_outer_classname = "SimpleServiceProto";
+option java_multiple_files = true;
+
+service SimpleService {
+  // Request / Response
+  rpc RequestReply (SimpleRequest) returns (SimpleResponse) {}
+
+  // Fire-and-Forget
+  rpc FireAndForget (SimpleRequest) returns (google.protobuf.Empty) {}
+
+  // Single Request / Streaming Response
+  rpc RequestStream (SimpleRequest) returns (stream SimpleResponse) {}
+
+  // Streaming Request / Single Response
+  rpc StreamingRequestSingleResponse (stream SimpleRequest) returns (SimpleResponse) {}
+
+  // Streaming Request / Streaming Response
+  rpc StreamingRequestAndResponse (stream SimpleRequest) returns (stream SimpleResponse)
+}
+
+message SimpleRequest {
+  string requestMessage = 1;
+}
+
+message SimpleResponse {
+  string responseMessage = 1;
 }
 ```
 
