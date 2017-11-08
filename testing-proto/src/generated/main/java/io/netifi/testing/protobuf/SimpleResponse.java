@@ -4,10 +4,6 @@
 package io.netifi.testing.protobuf;
 
 /**
- * <pre>
- * A simple response message type for test.
- * </pre>
- *
  * Protobuf type {@code io.netifi.testing.SimpleResponse}
  */
 public  final class SimpleResponse extends
@@ -84,10 +80,6 @@ private static final long serialVersionUID = 0L;
   public static final int RESPONSEMESSAGE_FIELD_NUMBER = 1;
   private volatile java.lang.Object responseMessage_;
   /**
-   * <pre>
-   * An optional string message for test.
-   * </pre>
-   *
    * <code>string responseMessage = 1;</code>
    */
   public java.lang.String getResponseMessage() {
@@ -103,10 +95,6 @@ private static final long serialVersionUID = 0L;
     }
   }
   /**
-   * <pre>
-   * An optional string message for test.
-   * </pre>
-   *
    * <code>string responseMessage = 1;</code>
    */
   public com.google.protobuf.ByteString
@@ -274,10 +262,6 @@ private static final long serialVersionUID = 0L;
     return builder;
   }
   /**
-   * <pre>
-   * A simple response message type for test.
-   * </pre>
-   *
    * Protobuf type {@code io.netifi.testing.SimpleResponse}
    */
   public static final class Builder extends
@@ -412,10 +396,6 @@ private static final long serialVersionUID = 0L;
 
     private java.lang.Object responseMessage_ = "";
     /**
-     * <pre>
-     * An optional string message for test.
-     * </pre>
-     *
      * <code>string responseMessage = 1;</code>
      */
     public java.lang.String getResponseMessage() {
@@ -431,10 +411,6 @@ private static final long serialVersionUID = 0L;
       }
     }
     /**
-     * <pre>
-     * An optional string message for test.
-     * </pre>
-     *
      * <code>string responseMessage = 1;</code>
      */
     public com.google.protobuf.ByteString
@@ -451,10 +427,6 @@ private static final long serialVersionUID = 0L;
       }
     }
     /**
-     * <pre>
-     * An optional string message for test.
-     * </pre>
-     *
      * <code>string responseMessage = 1;</code>
      */
     public Builder setResponseMessage(
@@ -468,10 +440,6 @@ private static final long serialVersionUID = 0L;
       return this;
     }
     /**
-     * <pre>
-     * An optional string message for test.
-     * </pre>
-     *
      * <code>string responseMessage = 1;</code>
      */
     public Builder clearResponseMessage() {
@@ -481,10 +449,6 @@ private static final long serialVersionUID = 0L;
       return this;
     }
     /**
-     * <pre>
-     * An optional string message for test.
-     * </pre>
-     *
      * <code>string responseMessage = 1;</code>
      */
     public Builder setResponseMessageBytes(

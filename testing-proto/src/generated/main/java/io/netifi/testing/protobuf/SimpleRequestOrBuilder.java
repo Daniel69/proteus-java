@@ -8,18 +8,10 @@ public interface SimpleRequestOrBuilder extends
     com.google.protobuf.MessageOrBuilder {
 
   /**
-   * <pre>
-   * An optional string message for test.
-   * </pre>
-   *
    * <code>string requestMessage = 1;</code>
    */
   java.lang.String getRequestMessage();
   /**
-   * <pre>
-   * An optional string message for test.
-   * </pre>
-   *
    * <code>string requestMessage = 1;</code>
    */
   com.google.protobuf.ByteString

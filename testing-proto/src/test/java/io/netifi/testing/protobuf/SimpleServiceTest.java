@@ -1,6 +1,5 @@
 package io.netifi.testing.protobuf;
 
-import com.google.protobuf.Empty;
 import io.netifi.proteus.rs.RequestHandlingRSocket;
 import io.rsocket.RSocket;
 import io.rsocket.RSocketFactory;
@@ -10,7 +9,6 @@ import org.junit.Assert;
 import org.junit.BeforeClass;
 import org.junit.Test;
 import org.reactivestreams.Publisher;
-import reactor.core.publisher.EmitterProcessor;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
@@ -26,23 +24,25 @@ public class SimpleServiceTest {
 
   @BeforeClass
   public static void setup() {
+    SimpleServiceServer serviceServer = new SimpleServiceServer(new DefaultSimpleService());
+  
     RSocketFactory.receive()
         .acceptor(
             (setup, sendingSocket) ->
-                Mono.just(new RequestHandlingRSocket(new SimpleServiceServer(new DefaultSimpleService()))))
+                Mono.just(new RequestHandlingRSocket(serviceServer)))
         .transport(TcpServerTransport.create(8801))
         .start()
         .block();
-
+  
     rSocket = RSocketFactory.connect().transport(TcpClientTransport.create(8801)).start().block();
   }
 
   @Test
-  public void testUnaryRpc() {
+  public void testRequestReply() {
     SimpleServiceClient client = new SimpleServiceClient(rSocket);
     SimpleResponse response =
         client
-            .unaryRpc(SimpleRequest.newBuilder().setRequestMessage("sending a message").build())
+            .requestReply(SimpleRequest.newBuilder().setRequestMessage("sending a message").build())
             .block();
 
     String responseMessage = response.getResponseMessage();
@@ -57,7 +57,7 @@ public class SimpleServiceTest {
     SimpleServiceClient client = new SimpleServiceClient(rSocket);
     SimpleResponse response =
         client
-            .serverStreamingRpc(
+            .requestStream(
                 SimpleRequest.newBuilder().setRequestMessage("sending a message").build())
             .take(5)
             .blockLast();
@@ -70,7 +70,7 @@ public class SimpleServiceTest {
   public void testStreamingPrintEach() {
     SimpleServiceClient client = new SimpleServiceClient(rSocket);
     client
-        .serverStreamingRpc(
+        .requestStream(
             SimpleRequest.newBuilder().setRequestMessage("sending a message").build())
         .take(5)
         .toStream()
@@ -86,7 +86,7 @@ public class SimpleServiceTest {
             .map(i -> "sending -> " + i)
             .map(s -> SimpleRequest.newBuilder().setRequestMessage(s).build());
 
-    SimpleResponse response = client.clientStreamingRpc(requests).block();
+    SimpleResponse response = client.streamingRequestSingleResponse(requests).block();
 
     System.out.println(response.getResponseMessage());
   }
@@ -100,7 +100,7 @@ public class SimpleServiceTest {
             .map(i -> "sending -> " + i)
             .map(s -> SimpleRequest.newBuilder().setRequestMessage(s).build());
 
-    SimpleResponse response = client.bidiStreamingRpc(requests).take(10).blockLast();
+    SimpleResponse response = client.streamingRequestAndResponse(requests).take(10).blockLast();
 
     System.out.println(response.getResponseMessage());
   }
@@ -110,38 +110,24 @@ public class SimpleServiceTest {
     int count = 1000;
     CountDownLatch latch = new CountDownLatch(count);
     SimpleServiceClient client = new SimpleServiceClient(rSocket);
-    client
-        .streamOnFireAndForget(Empty.getDefaultInstance())
-        .subscribe(simpleResponse -> latch.countDown());
     Flux.range(1, count)
         .flatMap(
             i ->
                 client.fireAndForget(
                     SimpleRequest.newBuilder().setRequestMessage("fire -> " + i).build()))
-        .subscribe();
-    latch.await();
+        .blockLast();
   }
 
   static class DefaultSimpleService implements SimpleService {
-    EmitterProcessor<SimpleRequest> messages = EmitterProcessor.create();
 
     @Override
     public Mono<Void> fireAndForget(SimpleRequest message) {
-      messages.onNext(message);
+      System.out.println("got message -> " + message.getRequestMessage());
       return Mono.empty();
     }
-
+    
     @Override
-    public Flux<SimpleResponse> streamOnFireAndForget(Empty message) {
-      return messages.map(
-          simpleRequest ->
-              SimpleResponse.newBuilder()
-                  .setResponseMessage("got fire and forget -> " + simpleRequest.getRequestMessage())
-                  .build());
-    }
-
-    @Override
-    public Mono<SimpleResponse> unaryRpc(SimpleRequest message) {
+    public Mono<SimpleResponse> requestReply(SimpleRequest message) {
       return Mono.fromCallable(
           () ->
               SimpleResponse.newBuilder()
@@ -150,7 +136,7 @@ public class SimpleServiceTest {
     }
 
     @Override
-    public Mono<SimpleResponse> clientStreamingRpc(Publisher<SimpleRequest> messages) {
+    public Mono<SimpleResponse> streamingRequestSingleResponse(Publisher<SimpleRequest> messages) {
       return Flux.from(messages)
           .windowTimeout(10, Duration.ofSeconds(500))
           .take(1)
@@ -186,7 +172,7 @@ public class SimpleServiceTest {
     }
 
     @Override
-    public Flux<SimpleResponse> serverStreamingRpc(SimpleRequest message) {
+    public Flux<SimpleResponse> requestStream(SimpleRequest message) {
       String requestMessage = message.getRequestMessage();
       return Flux.interval(Duration.ofMillis(200))
           .onBackpressureDrop()
@@ -195,8 +181,8 @@ public class SimpleServiceTest {
     }
 
     @Override
-    public Flux<SimpleResponse> bidiStreamingRpc(Publisher<SimpleRequest> messages) {
-      return Flux.from(messages).flatMap(this::unaryRpc);
+    public Flux<SimpleResponse> streamingRequestAndResponse(Publisher<SimpleRequest> messages) {
+      return Flux.from(messages).flatMap(this::requestReply);
     }
   }
 }

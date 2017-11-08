@@ -37,22 +37,21 @@ public final class SimpleServiceProto {
       "ce.proto\022\021io.netifi.testing\032\033google/prot" +
       "obuf/empty.proto\"\'\n\rSimpleRequest\022\026\n\016req" +
       "uestMessage\030\001 \001(\t\")\n\016SimpleResponse\022\027\n\017r" +
-      "esponseMessage\030\001 \001(\t2\244\004\n\rSimpleService\022K" +
-      "\n\rFireAndForget\022 .io.netifi.testing.Simp" +
-      "leRequest\032\026.google.protobuf.Empty\"\000\022V\n\025S" +
-      "treamOnFireAndForget\022\026.google.protobuf.E" +
-      "mpty\032!.io.netifi.testing.SimpleResponse\"" +
-      "\0000\001\022Q\n\010UnaryRpc\022 .io.netifi.testing.Simp",
-      "leRequest\032!.io.netifi.testing.SimpleResp" +
-      "onse\"\000\022]\n\022ClientStreamingRpc\022 .io.netifi" +
-      ".testing.SimpleRequest\032!.io.netifi.testi" +
-      "ng.SimpleResponse\"\000(\001\022]\n\022ServerStreaming" +
-      "Rpc\022 .io.netifi.testing.SimpleRequest\032!." +
-      "io.netifi.testing.SimpleResponse\"\0000\001\022]\n\020" +
-      "BidiStreamingRpc\022 .io.netifi.testing.Sim" +
-      "pleRequest\032!.io.netifi.testing.SimpleRes" +
-      "ponse\"\000(\0010\001B2\n\032io.netifi.testing.protobu" +
-      "fB\022SimpleServiceProtoP\001b\006proto3"
+      "esponseMessage\030\001 \001(\t2\342\003\n\rSimpleService\022U" +
+      "\n\014RequestReply\022 .io.netifi.testing.Simpl" +
+      "eRequest\032!.io.netifi.testing.SimpleRespo" +
+      "nse\"\000\022K\n\rFireAndForget\022 .io.netifi.testi" +
+      "ng.SimpleRequest\032\026.google.protobuf.Empty" +
+      "\"\000\022X\n\rRequestStream\022 .io.netifi.testing.",
+      "SimpleRequest\032!.io.netifi.testing.Simple" +
+      "Response\"\0000\001\022i\n\036StreamingRequestSingleRe" +
+      "sponse\022 .io.netifi.testing.SimpleRequest" +
+      "\032!.io.netifi.testing.SimpleResponse\"\000(\001\022" +
+      "h\n\033StreamingRequestAndResponse\022 .io.neti" +
+      "fi.testing.SimpleRequest\032!.io.netifi.tes" +
+      "ting.SimpleResponse\"\000(\0010\001B2\n\032io.netifi.t" +
+      "esting.protobufB\022SimpleServiceProtoP\001b\006p" +
+      "roto3"
     };
     com.google.protobuf.Descriptors.FileDescriptor.InternalDescriptorAssigner assigner =
         new com.google.protobuf.Descriptors.FileDescriptor.    InternalDescriptorAssigner() {

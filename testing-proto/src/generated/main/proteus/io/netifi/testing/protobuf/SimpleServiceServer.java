@@ -43,9 +43,9 @@ public final class SimpleServiceServer extends io.netifi.proteus.AbstractProteus
     try {
       io.netty.buffer.ByteBuf metadata = io.netty.buffer.Unpooled.wrappedBuffer(payload.getMetadata());
       switch(io.netifi.proteus.frames.ProteusMetadata.methodId(metadata)) {
-        case SimpleService.METHOD_UNARY_RPC: {
+        case SimpleService.METHOD_REQUEST_REPLY: {
           com.google.protobuf.ByteString data = com.google.protobuf.UnsafeByteOperations.unsafeWrap(payload.getData());
-          return service.unaryRpc(io.netifi.testing.protobuf.SimpleRequest.parseFrom(data)).map(serializer);
+          return service.requestReply(io.netifi.testing.protobuf.SimpleRequest.parseFrom(data)).map(serializer);
         }
         default: {
           return reactor.core.publisher.Mono.error(new UnsupportedOperationException());
@@ -61,13 +61,9 @@ public final class SimpleServiceServer extends io.netifi.proteus.AbstractProteus
     try {
       io.netty.buffer.ByteBuf metadata = io.netty.buffer.Unpooled.wrappedBuffer(payload.getMetadata());
       switch(io.netifi.proteus.frames.ProteusMetadata.methodId(metadata)) {
-        case SimpleService.METHOD_STREAM_ON_FIRE_AND_FORGET: {
+        case SimpleService.METHOD_REQUEST_STREAM: {
           com.google.protobuf.ByteString data = com.google.protobuf.UnsafeByteOperations.unsafeWrap(payload.getData());
-          return service.streamOnFireAndForget(com.google.protobuf.Empty.parseFrom(data)).map(serializer);
-        }
-        case SimpleService.METHOD_SERVER_STREAMING_RPC: {
-          com.google.protobuf.ByteString data = com.google.protobuf.UnsafeByteOperations.unsafeWrap(payload.getData());
-          return service.serverStreamingRpc(io.netifi.testing.protobuf.SimpleRequest.parseFrom(data)).map(serializer);
+          return service.requestStream(io.netifi.testing.protobuf.SimpleRequest.parseFrom(data)).map(serializer);
         }
         default: {
           return reactor.core.publisher.Flux.error(new UnsupportedOperationException());
@@ -83,15 +79,15 @@ public final class SimpleServiceServer extends io.netifi.proteus.AbstractProteus
     try {
       io.netty.buffer.ByteBuf metadata = io.netty.buffer.Unpooled.wrappedBuffer(payload.getMetadata());
       switch(io.netifi.proteus.frames.ProteusMetadata.methodId(metadata)) {
-        case SimpleService.METHOD_CLIENT_STREAMING_RPC: {
+        case SimpleService.METHOD_STREAMING_REQUEST_SINGLE_RESPONSE: {
           reactor.core.publisher.Flux<io.netifi.testing.protobuf.SimpleRequest> messages =
             publisher.map(deserializer(io.netifi.testing.protobuf.SimpleRequest.parser()));
-          return service.clientStreamingRpc(messages).map(serializer).flux();
+          return service.streamingRequestSingleResponse(messages).map(serializer).flux();
         }
-        case SimpleService.METHOD_BIDI_STREAMING_RPC: {
+        case SimpleService.METHOD_STREAMING_REQUEST_AND_RESPONSE: {
           reactor.core.publisher.Flux<io.netifi.testing.protobuf.SimpleRequest> messages =
             publisher.map(deserializer(io.netifi.testing.protobuf.SimpleRequest.parser()));
-          return service.bidiStreamingRpc(messages).map(serializer);
+          return service.streamingRequestAndResponse(messages).map(serializer);
         }
         default: {
           return reactor.core.publisher.Flux.error(new UnsupportedOperationException());
