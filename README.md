@@ -1,4 +1,4 @@
-## ![image](docs/images/proteus.png) Netifi Proteus Java
+# Netifi Proteus Java
 A fast, and easy [RSocket](http://rsocket.io/)-based RPC layer.
 
 ## Build from Source
