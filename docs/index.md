@@ -324,7 +324,7 @@ System.out.println(response.getResponseMessage());
 The above example streams in 11 items to a server. The server receives the stream, counts the most common words, and then returns a message detailing the data received. 
 
 ## Working example
-To see a working example of the code described here please view the [SimpleServiceTest](https://github.com/netifi/proteus-java/blob/master/testing-proto/src/test/java/io/netifi/testing/Protobuf/SimpleServiceTest.java) class.
+To see a working example of the code described here please view the [SimpleServiceTest](https://github.com/netifi/proteus-java/blob/master/testing-proto/src/test/java/io/netifi/testing/protobuf/SimpleServiceTest.java) class.
 
 
 ## Release Notes
