@@ -84,7 +84,7 @@ Proteus Java uses a Protobuf plugin to generate application code. Add the follow
 ```
 Protobuf {
     protoc {
-        artifact = 'com.google.Protobuf:protoc:3.4.0'
+        artifact = 'com.google.Protobuf:protoc:3.5.0'
     }
     plugins {
         proteus {

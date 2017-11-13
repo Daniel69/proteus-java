@@ -23,11 +23,11 @@ public final class SimpleServiceServer extends io.netifi.proteus.AbstractProteus
   @java.lang.Override
   public reactor.core.publisher.Mono<Void> fireAndForget(io.rsocket.Payload payload) {
     try {
-      io.netty.buffer.ByteBuf metadata = io.netty.buffer.Unpooled.wrappedBuffer(payload.getMetadata());
+      io.netty.buffer.ByteBuf metadata = payload.sliceMetadata();
       switch(io.netifi.proteus.frames.ProteusMetadata.methodId(metadata)) {
         case SimpleService.METHOD_FIRE_AND_FORGET: {
-          com.google.protobuf.ByteString data = com.google.protobuf.UnsafeByteOperations.unsafeWrap(payload.getData());
-          return service.fireAndForget(io.netifi.testing.protobuf.SimpleRequest.parseFrom(data));
+          io.netty.buffer.ByteBufInputStream bis = new io.netty.buffer.ByteBufInputStream(payload.sliceData());
+          return service.fireAndForget(io.netifi.testing.protobuf.SimpleRequest.parseFrom(bis));
         }
         default: {
           return reactor.core.publisher.Mono.error(new UnsupportedOperationException());
@@ -35,16 +35,17 @@ public final class SimpleServiceServer extends io.netifi.proteus.AbstractProteus
       }
     } catch (Throwable t) {
       return reactor.core.publisher.Mono.error(t);
-    }
-  }
+    } finally {
+      payload.release();
+    }}
 
   @java.lang.Override
   public reactor.core.publisher.Mono<io.rsocket.Payload> requestResponse(io.rsocket.Payload payload) {
     try {
-      io.netty.buffer.ByteBuf metadata = io.netty.buffer.Unpooled.wrappedBuffer(payload.getMetadata());
+      io.netty.buffer.ByteBuf metadata = payload.sliceMetadata();
       switch(io.netifi.proteus.frames.ProteusMetadata.methodId(metadata)) {
         case SimpleService.METHOD_REQUEST_REPLY: {
-          com.google.protobuf.ByteString data = com.google.protobuf.UnsafeByteOperations.unsafeWrap(payload.getData());
+          com.google.protobuf.ByteString data = com.google.protobuf.UnsafeByteOperations.unsafeWrap(payload.sliceData().nioBuffer());
           return service.requestReply(io.netifi.testing.protobuf.SimpleRequest.parseFrom(data)).map(serializer);
         }
         default: {
@@ -53,16 +54,17 @@ public final class SimpleServiceServer extends io.netifi.proteus.AbstractProteus
       }
     } catch (Throwable t) {
       return reactor.core.publisher.Mono.error(t);
-    }
-  }
+    } finally {
+      payload.release();
+    }}
 
   @java.lang.Override
   public reactor.core.publisher.Flux<io.rsocket.Payload> requestStream(io.rsocket.Payload payload) {
     try {
-      io.netty.buffer.ByteBuf metadata = io.netty.buffer.Unpooled.wrappedBuffer(payload.getMetadata());
+      io.netty.buffer.ByteBuf metadata = payload.sliceMetadata();
       switch(io.netifi.proteus.frames.ProteusMetadata.methodId(metadata)) {
         case SimpleService.METHOD_REQUEST_STREAM: {
-          com.google.protobuf.ByteString data = com.google.protobuf.UnsafeByteOperations.unsafeWrap(payload.getData());
+          io.netty.buffer.ByteBufInputStream data = new io.netty.buffer.ByteBufInputStream(payload.sliceData());
           return service.requestStream(io.netifi.testing.protobuf.SimpleRequest.parseFrom(data)).map(serializer);
         }
         default: {
@@ -71,13 +73,14 @@ public final class SimpleServiceServer extends io.netifi.proteus.AbstractProteus
       }
     } catch (Throwable t) {
       return reactor.core.publisher.Flux.error(t);
-    }
-  }
+    } finally {
+      payload.release();
+    }}
 
   @java.lang.Override
   public reactor.core.publisher.Flux<io.rsocket.Payload> requestChannel(io.rsocket.Payload payload, reactor.core.publisher.Flux<io.rsocket.Payload> publisher) {
     try {
-      io.netty.buffer.ByteBuf metadata = io.netty.buffer.Unpooled.wrappedBuffer(payload.getMetadata());
+      io.netty.buffer.ByteBuf metadata = payload.sliceMetadata();
       switch(io.netifi.proteus.frames.ProteusMetadata.methodId(metadata)) {
         case SimpleService.METHOD_STREAMING_REQUEST_SINGLE_RESPONSE: {
           reactor.core.publisher.Flux<io.netifi.testing.protobuf.SimpleRequest> messages =
@@ -112,7 +115,14 @@ public final class SimpleServiceServer extends io.netifi.proteus.AbstractProteus
     new java.util.function.Function<com.google.protobuf.MessageLite, io.rsocket.Payload>() {
       @java.lang.Override
       public io.rsocket.Payload apply(com.google.protobuf.MessageLite message) {
-        return new io.rsocket.util.PayloadImpl(message.toByteString().asReadOnlyByteBuffer());
+        try {
+          io.netty.buffer.ByteBuf byteBuf = io.netty.buffer.ByteBufAllocator.DEFAULT.directBuffer();
+          io.netty.buffer.ByteBufOutputStream bos = new io.netty.buffer.ByteBufOutputStream(byteBuf);
+          message.writeTo(bos);
+          return io.rsocket.util.ByteBufPayload.create(byteBuf);
+        } catch(Throwable t) {
+          throw new RuntimeException(t);
+        }
       }
     };
 
@@ -121,10 +131,12 @@ public final class SimpleServiceServer extends io.netifi.proteus.AbstractProteus
       @java.lang.Override
       public T apply(io.rsocket.Payload payload) {
         try {
-          com.google.protobuf.ByteString data = com.google.protobuf.UnsafeByteOperations.unsafeWrap(payload.getData());
-          return parser.parseFrom(data);
+          io.netty.buffer.ByteBufInputStream bis = new io.netty.buffer.ByteBufInputStream(payload.sliceData());
+          return parser.parseFrom(bis);
         } catch (Throwable t) {
           throw new RuntimeException(t);
+        } finally {
+          payload.release();
         }
       }
     };

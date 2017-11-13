@@ -1,6 +1,7 @@
 package io.netifi.testing.protobuf;
 
 import io.netifi.proteus.rs.RequestHandlingRSocket;
+import io.rsocket.Frame;
 import io.rsocket.RSocket;
 import io.rsocket.RSocketFactory;
 import io.rsocket.transport.netty.client.TcpClientTransport;
@@ -25,16 +26,20 @@ public class SimpleServiceTest {
   @BeforeClass
   public static void setup() {
     SimpleServiceServer serviceServer = new SimpleServiceServer(new DefaultSimpleService());
-  
+
     RSocketFactory.receive()
-        .acceptor(
-            (setup, sendingSocket) ->
-                Mono.just(new RequestHandlingRSocket(serviceServer)))
+        .frameDecoder(Frame::retain)
+        .acceptor((setup, sendingSocket) -> Mono.just(new RequestHandlingRSocket(serviceServer)))
         .transport(TcpServerTransport.create(8801))
         .start()
         .block();
-  
-    rSocket = RSocketFactory.connect().transport(TcpClientTransport.create(8801)).start().block();
+
+    rSocket =
+        RSocketFactory.connect()
+            .frameDecoder(Frame::retain)
+            .transport(TcpClientTransport.create(8801))
+            .start()
+            .block();
   }
 
   @Test
@@ -51,7 +56,7 @@ public class SimpleServiceTest {
 
     Assert.assertEquals("we got the message -> sending a message", responseMessage);
   }
-
+  
   @Test(timeout = 5_000)
   public void testStreaming() {
     SimpleServiceClient client = new SimpleServiceClient(rSocket);
@@ -70,8 +75,7 @@ public class SimpleServiceTest {
   public void testStreamingPrintEach() {
     SimpleServiceClient client = new SimpleServiceClient(rSocket);
     client
-        .requestStream(
-            SimpleRequest.newBuilder().setRequestMessage("sending a message").build())
+        .requestStream(SimpleRequest.newBuilder().setRequestMessage("sending a message").build())
         .take(5)
         .toStream()
         .forEach(simpleResponse -> System.out.println(simpleResponse.getResponseMessage()));
@@ -91,16 +95,16 @@ public class SimpleServiceTest {
     System.out.println(response.getResponseMessage());
   }
 
-  @Test(timeout = 3_000)
+  @Test(timeout = 15_000)
   public void testBidiStreamingRpc() {
     SimpleServiceClient client = new SimpleServiceClient(rSocket);
 
     Flux<SimpleRequest> requests =
-        Flux.range(1, 11)
+        Flux.range(1, 500_000)
             .map(i -> "sending -> " + i)
             .map(s -> SimpleRequest.newBuilder().setRequestMessage(s).build());
 
-    SimpleResponse response = client.streamingRequestAndResponse(requests).take(10).blockLast();
+    SimpleResponse response = client.streamingRequestAndResponse(requests).take(500_000).blockLast();
 
     System.out.println(response.getResponseMessage());
   }
@@ -125,7 +129,7 @@ public class SimpleServiceTest {
       System.out.println("got message -> " + message.getRequestMessage());
       return Mono.empty();
     }
-    
+
     @Override
     public Mono<SimpleResponse> requestReply(SimpleRequest message) {
       return Mono.fromCallable(

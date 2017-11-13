@@ -26,6 +26,8 @@ public class ProteusMetadata {
 
       byteBuf.setInt(offset, methodId);
       offset += METHOD_ID_SIZE;
+      
+      byteBuf.writerIndex(offset);
 
       return offset;
   }

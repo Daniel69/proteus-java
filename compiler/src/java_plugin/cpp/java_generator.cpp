@@ -472,8 +472,8 @@ static void PrintClient(const ServiceDescriptor* service,
       p->Indent();
       p->Print(
           *vars,
-          "$ByteBuffer$ data = message.toByteString().asReadOnlyByteBuffer();\n"
-          "return new $PayloadImpl$(data, metadata.nioBuffer(0, length));\n");
+          "$ByteBuf$ data = serialize(message);\n"
+          "return $ByteBufPayload$.create(data, metadata).retain();\n");
       p->Outdent();
       p->Print("}\n");
       p->Outdent();
@@ -499,12 +499,12 @@ static void PrintClient(const ServiceDescriptor* service,
           "final int length = $ProteusMetadata$.computeLength();\n"
           "$ByteBuf$ metadata = $ByteBufAllocator$.DEFAULT.directBuffer(length);\n"
           "$ProteusMetadata$.encode(metadata, $service_name$.$namespace_id_name$, $service_name$.$service_id_name$, $service_name$.$method_id_name$);\n"
-          "$ByteBuffer$ data = message.toByteString().asReadOnlyByteBuffer();\n\n");
+          "$ByteBuf$ data = serialize(message);\n\n");
 
       if (server_streaming) {
         p->Print(
             *vars,
-            "return rSocket.requestStream(new $PayloadImpl$(data, metadata.nioBuffer(0, length)))\n");
+            "return rSocket.requestStream($ByteBufPayload$.create(data, metadata))\n");
         p->Indent();
         p->Print(
             *vars,
@@ -515,7 +515,7 @@ static void PrintClient(const ServiceDescriptor* service,
         if (output_type->field_count() > 0) {
           p->Print(
               *vars,
-              "return rSocket.requestResponse(new $PayloadImpl$(data, metadata.nioBuffer(0, length)))\n");
+              "return rSocket.requestResponse($ByteBufPayload$.create(data, metadata))\n");
           p->Indent();
           p->Print(
               *vars,
@@ -524,7 +524,7 @@ static void PrintClient(const ServiceDescriptor* service,
         } else {
           p->Print(
               *vars,
-              "return rSocket.fireAndForget(new $PayloadImpl$(data, metadata.nioBuffer(0, length)));\n");
+              "return rSocket.fireAndForget($ByteBufPayload$.create(data, metadata));\n");
         }
       }
 
@@ -532,6 +532,29 @@ static void PrintClient(const ServiceDescriptor* service,
       p->Print("}\n\n");
     }
   }
+
+  // Serialize method
+  p->Print(
+  *vars,
+  "private static $ByteBuf$ serialize(final $MessageLite$ message) {\n");
+  p->Indent();
+  p->Print("try {\n");
+  p->Indent();
+  p->Print(
+    *vars,
+    "$ByteBuf$ byteBuf = $ByteBufAllocator$.DEFAULT.directBuffer();\n");
+  p->Print(
+    *vars,"$ByteBufOutputStream$ bos = new $ByteBufOutputStream$(byteBuf);\n");
+  p->Print("message.writeTo(bos);\n");
+  p->Print("return byteBuf;\n");
+  p->Outdent();
+  p->Print("} catch (Throwable t) {\n");
+  p->Indent();
+  p->Print("throw new RuntimeException(t);\n");
+  p->Outdent();
+  p->Print("}\n");
+  p->Outdent();
+  p->Print("}\n\n");
 
   // Deserializer
   p->Print(
@@ -561,6 +584,10 @@ static void PrintClient(const ServiceDescriptor* service,
   p->Print(
       *vars,
       "throw new RuntimeException(t);\n");
+  p->Outdent();
+  p->Print("} finally {\n");
+  p->Indent();
+  p->Print("payload.release();\n");
   p->Outdent();
   p->Print("}\n");
   p->Outdent();
@@ -672,7 +699,7 @@ static void PrintServer(const ServiceDescriptor* service,
     p->Indent();
     p->Print(
         *vars,
-        "$ByteBuf$ metadata = $Unpooled$.wrappedBuffer(payload.getMetadata());\n"
+        "$ByteBuf$ metadata = payload.sliceMetadata();\n"
         "switch($ProteusMetadata$.methodId(metadata)) {\n");
     p->Indent();
     for (vector<const MethodDescriptor*>::iterator it = fire_and_forget.begin(); it != fire_and_forget.end(); ++it) {
@@ -686,8 +713,8 @@ static void PrintServer(const ServiceDescriptor* service,
       p->Indent();
       p->Print(
           *vars,
-          "$ByteString$ data = $UnsafeByteOperations$.unsafeWrap(payload.getData());\n"
-          "return service.$lower_method_name$($input_type$.parseFrom(data));\n");
+          "$ByteBufInputStream$ bis = new $ByteBufInputStream$(payload.sliceData());\n"
+          "return service.$lower_method_name$($input_type$.parseFrom(bis));\n");
       p->Outdent();
       p->Print("}\n");
     }
@@ -709,7 +736,11 @@ static void PrintServer(const ServiceDescriptor* service,
         *vars,
         "return $Mono$.error(t);\n");
     p->Outdent();
-    p->Print("}\n");
+    p->Print("} finally {\n");
+    p->Indent();
+    p->Print("payload.release();\n");
+    p->Outdent();
+    p->Print("}");
   }
   p->Outdent();
   p->Print("}\n\n");
@@ -731,7 +762,7 @@ static void PrintServer(const ServiceDescriptor* service,
     p->Indent();
     p->Print(
         *vars,
-        "$ByteBuf$ metadata = $Unpooled$.wrappedBuffer(payload.getMetadata());\n"
+        "$ByteBuf$ metadata = payload.sliceMetadata();\n"
         "switch($ProteusMetadata$.methodId(metadata)) {\n");
     p->Indent();
     for (vector<const MethodDescriptor*>::iterator it = request_response.begin(); it != request_response.end(); ++it) {
@@ -746,7 +777,7 @@ static void PrintServer(const ServiceDescriptor* service,
       p->Indent();
       p->Print(
           *vars,
-          "$ByteString$ data = $UnsafeByteOperations$.unsafeWrap(payload.getData());\n"
+          "$ByteString$ data = $UnsafeByteOperations$.unsafeWrap(payload.sliceData().nioBuffer());\n"
           "return service.$lower_method_name$($input_type$.parseFrom(data)).map(serializer);\n");
       p->Outdent();
       p->Print("}\n");
@@ -769,7 +800,11 @@ static void PrintServer(const ServiceDescriptor* service,
         *vars,
         "return $Mono$.error(t);\n");
     p->Outdent();
-    p->Print("}\n");
+    p->Print("} finally {\n");
+    p->Indent();
+    p->Print("payload.release();\n");
+    p->Outdent();
+    p->Print("}");
   }
   p->Outdent();
   p->Print("}\n\n");
@@ -791,7 +826,7 @@ static void PrintServer(const ServiceDescriptor* service,
     p->Indent();
     p->Print(
         *vars,
-        "$ByteBuf$ metadata = $Unpooled$.wrappedBuffer(payload.getMetadata());\n"
+        "$ByteBuf$ metadata = payload.sliceMetadata();\n"
         "switch($ProteusMetadata$.methodId(metadata)) {\n");
     p->Indent();
     for (vector<const MethodDescriptor*>::iterator it = request_stream.begin(); it != request_stream.end(); ++it) {
@@ -806,7 +841,7 @@ static void PrintServer(const ServiceDescriptor* service,
       p->Indent();
       p->Print(
           *vars,
-          "$ByteString$ data = $UnsafeByteOperations$.unsafeWrap(payload.getData());\n"
+          "$ByteBufInputStream$ data = new $ByteBufInputStream$(payload.sliceData());\n"
           "return service.$lower_method_name$($input_type$.parseFrom(data)).map(serializer);\n");
       p->Outdent();
       p->Print("}\n");
@@ -829,7 +864,11 @@ static void PrintServer(const ServiceDescriptor* service,
         *vars,
         "return $Flux$.error(t);\n");
     p->Outdent();
-    p->Print("}\n");
+    p->Print("} finally {\n");
+    p->Indent();
+    p->Print("payload.release();\n");
+    p->Outdent();
+    p->Print("}");
   }
   p->Outdent();
   p->Print("}\n\n");
@@ -851,7 +890,7 @@ static void PrintServer(const ServiceDescriptor* service,
     p->Indent();
     p->Print(
         *vars,
-        "$ByteBuf$ metadata = $Unpooled$.wrappedBuffer(payload.getMetadata());\n"
+        "$ByteBuf$ metadata = payload.sliceMetadata();\n"
         "switch($ProteusMetadata$.methodId(metadata)) {\n");
     p->Indent();
     for (vector<const MethodDescriptor*>::iterator it = request_channel.begin(); it != request_channel.end(); ++it) {
@@ -952,9 +991,24 @@ static void PrintServer(const ServiceDescriptor* service,
       "@$Override$\n"
       "public $Payload$ apply($MessageLite$ message) {\n");
   p->Indent();
+  p->Print("try {\n");
+  p->Indent();
   p->Print(
       *vars,
-      "return new $PayloadImpl$(message.toByteString().asReadOnlyByteBuffer());\n");
+      "$ByteBuf$ byteBuf = $ByteBufAllocator$.DEFAULT.directBuffer();\n");
+  p->Print(
+    *vars,
+    "$ByteBufOutputStream$ bos = new $ByteBufOutputStream$(byteBuf);\n");
+  p->Print("message.writeTo(bos);\n");
+  p->Print(
+      *vars,
+      "return $ByteBufPayload$.create(byteBuf);\n");
+  p->Outdent();
+  p->Print("} catch(Throwable t) {\n");
+  p->Indent();
+  p->Print("throw new RuntimeException(t);\n");
+  p->Outdent();
+  p->Print("}\n");
   p->Outdent();
   p->Print("}\n");
   p->Outdent();
@@ -981,14 +1035,18 @@ static void PrintServer(const ServiceDescriptor* service,
   p->Indent();
   p->Print(
       *vars,
-      "$ByteString$ data = $UnsafeByteOperations$.unsafeWrap(payload.getData());\n"
-      "return parser.parseFrom(data);\n");
+      "$ByteBufInputStream$ bis = new $ByteBufInputStream$(payload.sliceData());\n"
+      "return parser.parseFrom(bis);\n");
   p->Outdent();
   p->Print("} catch (Throwable t) {\n");
   p->Indent();
   p->Print(
       *vars,
       "throw new RuntimeException(t);\n");
+  p->Outdent();
+  p->Print("} finally {\n");
+  p->Indent();
+  p->Print("payload.release();\n");
   p->Outdent();
   p->Print("}\n");
   p->Outdent();
@@ -1046,13 +1104,15 @@ void GenerateClient(const ServiceDescriptor* service,
   vars["Generated"] = "javax.annotation.Generated";
   vars["RSocket"] = "io.rsocket.RSocket";
   vars["Payload"] = "io.rsocket.Payload";
-  vars["PayloadImpl"] = "io.rsocket.util.PayloadImpl";
+  vars["ByteBufPayload"] = "io.rsocket.util.ByteBufPayload";
   vars["ByteBuf"] = "io.netty.buffer.ByteBuf";
+  vars["ByteBufInputStream"] = "io.netty.buffer.ByteBufInputStream";
+  vars["ByteBufOutputStream"] = "io.netty.buffer.ByteBufOutputStream";
   vars["ByteBufAllocator"] = "io.netty.buffer.ByteBufAllocator";
   vars["ByteBuffer"] = "java.nio.ByteBuffer";
   vars["ProteusMetadata"] = "io.netifi.proteus.frames.ProteusMetadata";
-  vars["ByteString"] = "com.google.protobuf.ByteString";
   vars["UnsafeByteOperations"] = "com.google.protobuf.UnsafeByteOperations";
+  vars["ByteString"] = "com.google.protobuf.ByteString";
   vars["MessageLite"] = "com.google.protobuf.MessageLite";
   vars["Parser"] = "com.google.protobuf.Parser";
 
@@ -1091,14 +1151,17 @@ void GenerateServer(const ServiceDescriptor* service,
   vars["Generated"] = "javax.annotation.Generated";
   vars["RSocket"] = "io.rsocket.RSocket";
   vars["Payload"] = "io.rsocket.Payload";
-  vars["PayloadImpl"] = "io.rsocket.util.PayloadImpl";
+  vars["ByteBufPayload"] = "io.rsocket.util.ByteBufPayload";
   vars["SwitchTransform"] = "io.rsocket.internal.SwitchTransform";
   vars["AbstractProteusService"] = "io.netifi.proteus.AbstractProteusService";
   vars["ProteusMetadata"] = "io.netifi.proteus.frames.ProteusMetadata";
   vars["ByteBuf"] = "io.netty.buffer.ByteBuf";
-  vars["Unpooled"] = "io.netty.buffer.Unpooled";
-  vars["ByteString"] = "com.google.protobuf.ByteString";
+  vars["ByteBuffer"] = "java.nio.ByteBuffer";
+  vars["ByteBufInputStream"] = "io.netty.buffer.ByteBufInputStream";
+  vars["ByteBufOutputStream"] = "io.netty.buffer.ByteBufOutputStream";
+  vars["ByteBufAllocator"] = "io.netty.buffer.ByteBufAllocator";
   vars["UnsafeByteOperations"] = "com.google.protobuf.UnsafeByteOperations";
+  vars["ByteString"] = "com.google.protobuf.ByteString";
   vars["MessageLite"] = "com.google.protobuf.MessageLite";
   vars["Parser"] = "com.google.protobuf.Parser";
 

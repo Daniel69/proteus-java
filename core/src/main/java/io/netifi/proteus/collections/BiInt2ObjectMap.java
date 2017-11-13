@@ -25,6 +25,7 @@ import java.util.Arrays;
  * @param <V> type of the object stored in the map.
  */
 public class BiInt2ObjectMap<V> implements Serializable {
+  private static final long serialVersionUID = 1L;
   private static final int MIN_CAPACITY = 8;
   private static final float DEFAULT_LOAD_FACTOR = 0.55f;
   private final float loadFactor;

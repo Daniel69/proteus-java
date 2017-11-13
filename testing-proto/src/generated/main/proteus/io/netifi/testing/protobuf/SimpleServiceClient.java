@@ -15,9 +15,9 @@ public final class SimpleServiceClient implements SimpleService {
     final int length = io.netifi.proteus.frames.ProteusMetadata.computeLength();
     io.netty.buffer.ByteBuf metadata = io.netty.buffer.ByteBufAllocator.DEFAULT.directBuffer(length);
     io.netifi.proteus.frames.ProteusMetadata.encode(metadata, SimpleService.NAMESPACE_ID, SimpleService.SERVICE_ID, SimpleService.METHOD_REQUEST_REPLY);
-    java.nio.ByteBuffer data = message.toByteString().asReadOnlyByteBuffer();
+    io.netty.buffer.ByteBuf data = serialize(message);
 
-    return rSocket.requestResponse(new io.rsocket.util.PayloadImpl(data, metadata.nioBuffer(0, length)))
+    return rSocket.requestResponse(io.rsocket.util.ByteBufPayload.create(data, metadata))
       .map(deserializer(io.netifi.testing.protobuf.SimpleResponse.parser()));
   }
 
@@ -26,9 +26,9 @@ public final class SimpleServiceClient implements SimpleService {
     final int length = io.netifi.proteus.frames.ProteusMetadata.computeLength();
     io.netty.buffer.ByteBuf metadata = io.netty.buffer.ByteBufAllocator.DEFAULT.directBuffer(length);
     io.netifi.proteus.frames.ProteusMetadata.encode(metadata, SimpleService.NAMESPACE_ID, SimpleService.SERVICE_ID, SimpleService.METHOD_FIRE_AND_FORGET);
-    java.nio.ByteBuffer data = message.toByteString().asReadOnlyByteBuffer();
+    io.netty.buffer.ByteBuf data = serialize(message);
 
-    return rSocket.fireAndForget(new io.rsocket.util.PayloadImpl(data, metadata.nioBuffer(0, length)));
+    return rSocket.fireAndForget(io.rsocket.util.ByteBufPayload.create(data, metadata));
   }
 
   @java.lang.Override
@@ -36,9 +36,9 @@ public final class SimpleServiceClient implements SimpleService {
     final int length = io.netifi.proteus.frames.ProteusMetadata.computeLength();
     io.netty.buffer.ByteBuf metadata = io.netty.buffer.ByteBufAllocator.DEFAULT.directBuffer(length);
     io.netifi.proteus.frames.ProteusMetadata.encode(metadata, SimpleService.NAMESPACE_ID, SimpleService.SERVICE_ID, SimpleService.METHOD_REQUEST_STREAM);
-    java.nio.ByteBuffer data = message.toByteString().asReadOnlyByteBuffer();
+    io.netty.buffer.ByteBuf data = serialize(message);
 
-    return rSocket.requestStream(new io.rsocket.util.PayloadImpl(data, metadata.nioBuffer(0, length)))
+    return rSocket.requestStream(io.rsocket.util.ByteBufPayload.create(data, metadata))
       .map(deserializer(io.netifi.testing.protobuf.SimpleResponse.parser()));
   }
 
@@ -52,8 +52,8 @@ public final class SimpleServiceClient implements SimpleService {
     return rSocket.requestChannel(publisher.map(new java.util.function.Function<com.google.protobuf.MessageLite, io.rsocket.Payload>() {
       @java.lang.Override
       public io.rsocket.Payload apply(com.google.protobuf.MessageLite message) {
-        java.nio.ByteBuffer data = message.toByteString().asReadOnlyByteBuffer();
-        return new io.rsocket.util.PayloadImpl(data, metadata.nioBuffer(0, length));
+        io.netty.buffer.ByteBuf data = serialize(message);
+        return io.rsocket.util.ByteBufPayload.create(data, metadata).retain();
       }
     })).map(deserializer(io.netifi.testing.protobuf.SimpleResponse.parser())).single();
   }
@@ -68,10 +68,21 @@ public final class SimpleServiceClient implements SimpleService {
     return rSocket.requestChannel(publisher.map(new java.util.function.Function<com.google.protobuf.MessageLite, io.rsocket.Payload>() {
       @java.lang.Override
       public io.rsocket.Payload apply(com.google.protobuf.MessageLite message) {
-        java.nio.ByteBuffer data = message.toByteString().asReadOnlyByteBuffer();
-        return new io.rsocket.util.PayloadImpl(data, metadata.nioBuffer(0, length));
+        io.netty.buffer.ByteBuf data = serialize(message);
+        return io.rsocket.util.ByteBufPayload.create(data, metadata).retain();
       }
     })).map(deserializer(io.netifi.testing.protobuf.SimpleResponse.parser()));
+  }
+
+  private static io.netty.buffer.ByteBuf serialize(final com.google.protobuf.MessageLite message) {
+    try {
+      io.netty.buffer.ByteBuf byteBuf = io.netty.buffer.ByteBufAllocator.DEFAULT.directBuffer();
+      io.netty.buffer.ByteBufOutputStream bos = new io.netty.buffer.ByteBufOutputStream(byteBuf);
+      message.writeTo(bos);
+      return byteBuf;
+    } catch (Throwable t) {
+      throw new RuntimeException(t);
+    }
   }
 
   private static <T> java.util.function.Function<io.rsocket.Payload, T> deserializer(final com.google.protobuf.Parser<T> parser) {
@@ -83,6 +94,8 @@ public final class SimpleServiceClient implements SimpleService {
           return parser.parseFrom(data);
         } catch (Throwable t) {
           throw new RuntimeException(t);
+        } finally {
+          payload.release();
         }
       }
     };
