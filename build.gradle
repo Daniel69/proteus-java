@@ -95,7 +95,7 @@ subprojects {
         protocPluginBaseName = 'proteus-java'
         javaPluginPath = "$rootDir/compiler/build/exe/java_plugin/$protocPluginBaseName$exeSuffix"
 
-        rSocketVersion = '0.9.17'
+        rSocketVersion = '0.9.19'
         protobufVersion = '3.5.0'
         protocVersion = protobufVersion
 

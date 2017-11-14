@@ -459,21 +459,37 @@ static void PrintClient(const ServiceDescriptor* service,
       p->Indent();
       p->Print(
           *vars,
-          "final int length = $ProteusMetadata$.computeLength();\n"
-          "final $ByteBuf$ metadata = $ByteBufAllocator$.DEFAULT.directBuffer(length);\n"
-          "$ProteusMetadata$.encode(metadata, $service_name$.$namespace_id_name$, $service_name$.$service_id_name$, $service_name$.$method_id_name$);\n\n"
-          "$Flux$<$input_type$> publisher = $Flux$.$from$(messages);\n"
-          "return rSocket.requestChannel(publisher.map(new $Function$<$MessageLite$, $Payload$>() {\n");
+          "return rSocket.requestChannel($Flux$.$from$(messages).map(\n");
       p->Indent();
       p->Print(
           *vars,
+          "new $Function$<$MessageLite$, $Payload$>() {\n");
+      p->Indent();
+      p->Print(
+          *vars,
+          "boolean once;\n\n"
           "@$Override$\n"
           "public $Payload$ apply($MessageLite$ message) {\n");
       p->Indent();
       p->Print(
           *vars,
           "$ByteBuf$ data = serialize(message);\n"
-          "return $ByteBufPayload$.create(data, metadata).retain();\n");
+          "if (!once) {\n");
+      p->Indent();
+      p->Print(
+          *vars,
+          "final int length = $ProteusMetadata$.computeLength();\n"
+          "final $ByteBuf$ metadata = $ByteBufAllocator$.DEFAULT.directBuffer(length);\n"
+          "$ProteusMetadata$.encode(metadata, $service_name$.$namespace_id_name$, $service_name$.$service_id_name$, $service_name$.$method_id_name$);\n"
+          "return $ByteBufPayload$.create(data, metadata);\n");
+      p->Outdent();
+      p->Print("} else {\n");
+      p->Indent();
+      p->Print(
+          *vars,
+          "return $ByteBufPayload$.create(data);\n");
+      p->Outdent();
+      p->Print("}\n");
       p->Outdent();
       p->Print("}\n");
       p->Outdent();
@@ -486,6 +502,7 @@ static void PrintClient(const ServiceDescriptor* service,
             *vars,
             "})).map(deserializer($output_type$.parser())).single();\n");
       }
+      p->Outdent();
       p->Outdent();
       p->Print("}\n\n");
     } else {
@@ -740,7 +757,7 @@ static void PrintServer(const ServiceDescriptor* service,
     p->Indent();
     p->Print("payload.release();\n");
     p->Outdent();
-    p->Print("}");
+    p->Print("}\n");
   }
   p->Outdent();
   p->Print("}\n\n");
@@ -804,7 +821,7 @@ static void PrintServer(const ServiceDescriptor* service,
     p->Indent();
     p->Print("payload.release();\n");
     p->Outdent();
-    p->Print("}");
+    p->Print("}\n");
   }
   p->Outdent();
   p->Print("}\n\n");
@@ -868,7 +885,7 @@ static void PrintServer(const ServiceDescriptor* service,
     p->Indent();
     p->Print("payload.release();\n");
     p->Outdent();
-    p->Print("}");
+    p->Print("}\n");
   }
   p->Outdent();
   p->Print("}\n\n");

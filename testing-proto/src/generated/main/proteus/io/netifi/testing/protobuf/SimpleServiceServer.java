@@ -37,7 +37,8 @@ public final class SimpleServiceServer extends io.netifi.proteus.AbstractProteus
       return reactor.core.publisher.Mono.error(t);
     } finally {
       payload.release();
-    }}
+    }
+  }
 
   @java.lang.Override
   public reactor.core.publisher.Mono<io.rsocket.Payload> requestResponse(io.rsocket.Payload payload) {
@@ -56,7 +57,8 @@ public final class SimpleServiceServer extends io.netifi.proteus.AbstractProteus
       return reactor.core.publisher.Mono.error(t);
     } finally {
       payload.release();
-    }}
+    }
+  }
 
   @java.lang.Override
   public reactor.core.publisher.Flux<io.rsocket.Payload> requestStream(io.rsocket.Payload payload) {
@@ -75,7 +77,8 @@ public final class SimpleServiceServer extends io.netifi.proteus.AbstractProteus
       return reactor.core.publisher.Flux.error(t);
     } finally {
       payload.release();
-    }}
+    }
+  }
 
   @java.lang.Override
   public reactor.core.publisher.Flux<io.rsocket.Payload> requestChannel(io.rsocket.Payload payload, reactor.core.publisher.Flux<io.rsocket.Payload> publisher) {

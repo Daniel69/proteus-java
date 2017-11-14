@@ -44,34 +44,44 @@ public final class SimpleServiceClient implements SimpleService {
 
   @java.lang.Override
   public reactor.core.publisher.Mono<io.netifi.testing.protobuf.SimpleResponse> streamingRequestSingleResponse(org.reactivestreams.Publisher<io.netifi.testing.protobuf.SimpleRequest> messages) {
-    final int length = io.netifi.proteus.frames.ProteusMetadata.computeLength();
-    final io.netty.buffer.ByteBuf metadata = io.netty.buffer.ByteBufAllocator.DEFAULT.directBuffer(length);
-    io.netifi.proteus.frames.ProteusMetadata.encode(metadata, SimpleService.NAMESPACE_ID, SimpleService.SERVICE_ID, SimpleService.METHOD_STREAMING_REQUEST_SINGLE_RESPONSE);
+    return rSocket.requestChannel(reactor.core.publisher.Flux.from(messages).map(
+      new java.util.function.Function<com.google.protobuf.MessageLite, io.rsocket.Payload>() {
+        boolean once;
 
-    reactor.core.publisher.Flux<io.netifi.testing.protobuf.SimpleRequest> publisher = reactor.core.publisher.Flux.from(messages);
-    return rSocket.requestChannel(publisher.map(new java.util.function.Function<com.google.protobuf.MessageLite, io.rsocket.Payload>() {
-      @java.lang.Override
-      public io.rsocket.Payload apply(com.google.protobuf.MessageLite message) {
-        io.netty.buffer.ByteBuf data = serialize(message);
-        return io.rsocket.util.ByteBufPayload.create(data, metadata).retain();
-      }
-    })).map(deserializer(io.netifi.testing.protobuf.SimpleResponse.parser())).single();
+        @java.lang.Override
+        public io.rsocket.Payload apply(com.google.protobuf.MessageLite message) {
+          io.netty.buffer.ByteBuf data = serialize(message);
+          if (!once) {
+            final int length = io.netifi.proteus.frames.ProteusMetadata.computeLength();
+            final io.netty.buffer.ByteBuf metadata = io.netty.buffer.ByteBufAllocator.DEFAULT.directBuffer(length);
+            io.netifi.proteus.frames.ProteusMetadata.encode(metadata, SimpleService.NAMESPACE_ID, SimpleService.SERVICE_ID, SimpleService.METHOD_STREAMING_REQUEST_SINGLE_RESPONSE);
+            return io.rsocket.util.ByteBufPayload.create(data, metadata);
+          } else {
+            return io.rsocket.util.ByteBufPayload.create(data);
+          }
+        }
+      })).map(deserializer(io.netifi.testing.protobuf.SimpleResponse.parser())).single();
   }
 
   @java.lang.Override
   public reactor.core.publisher.Flux<io.netifi.testing.protobuf.SimpleResponse> streamingRequestAndResponse(org.reactivestreams.Publisher<io.netifi.testing.protobuf.SimpleRequest> messages) {
-    final int length = io.netifi.proteus.frames.ProteusMetadata.computeLength();
-    final io.netty.buffer.ByteBuf metadata = io.netty.buffer.ByteBufAllocator.DEFAULT.directBuffer(length);
-    io.netifi.proteus.frames.ProteusMetadata.encode(metadata, SimpleService.NAMESPACE_ID, SimpleService.SERVICE_ID, SimpleService.METHOD_STREAMING_REQUEST_AND_RESPONSE);
+    return rSocket.requestChannel(reactor.core.publisher.Flux.from(messages).map(
+      new java.util.function.Function<com.google.protobuf.MessageLite, io.rsocket.Payload>() {
+        boolean once;
 
-    reactor.core.publisher.Flux<io.netifi.testing.protobuf.SimpleRequest> publisher = reactor.core.publisher.Flux.from(messages);
-    return rSocket.requestChannel(publisher.map(new java.util.function.Function<com.google.protobuf.MessageLite, io.rsocket.Payload>() {
-      @java.lang.Override
-      public io.rsocket.Payload apply(com.google.protobuf.MessageLite message) {
-        io.netty.buffer.ByteBuf data = serialize(message);
-        return io.rsocket.util.ByteBufPayload.create(data, metadata).retain();
-      }
-    })).map(deserializer(io.netifi.testing.protobuf.SimpleResponse.parser()));
+        @java.lang.Override
+        public io.rsocket.Payload apply(com.google.protobuf.MessageLite message) {
+          io.netty.buffer.ByteBuf data = serialize(message);
+          if (!once) {
+            final int length = io.netifi.proteus.frames.ProteusMetadata.computeLength();
+            final io.netty.buffer.ByteBuf metadata = io.netty.buffer.ByteBufAllocator.DEFAULT.directBuffer(length);
+            io.netifi.proteus.frames.ProteusMetadata.encode(metadata, SimpleService.NAMESPACE_ID, SimpleService.SERVICE_ID, SimpleService.METHOD_STREAMING_REQUEST_AND_RESPONSE);
+            return io.rsocket.util.ByteBufPayload.create(data, metadata);
+          } else {
+            return io.rsocket.util.ByteBufPayload.create(data);
+          }
+        }
+      })).map(deserializer(io.netifi.testing.protobuf.SimpleResponse.parser()));
   }
 
   private static io.netty.buffer.ByteBuf serialize(final com.google.protobuf.MessageLite message) {
