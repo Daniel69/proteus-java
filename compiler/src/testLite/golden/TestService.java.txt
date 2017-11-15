@@ -6,7 +6,7 @@ package io.netifi.testing.integration;
  * </pre>
  */
 @javax.annotation.Generated(
-    value = "by Proteus proto compiler (version 0.2.3)",
+    value = "by Proteus proto compiler (version 0.2.4)",
     comments = "Source: test.proto")
 public interface TestService {
   int NAMESPACE_ID = 298608432;

@@ -47,7 +47,7 @@ subprojects {
     }
 
     group = "io.netifi.proteus"
-    version = "0.2.3" // CURRENT_PROTEUS_VERSION
+    version = "0.2.4" // CURRENT_PROTEUS_VERSION
 
     sourceCompatibility = 1.6
     targetCompatibility = 1.6
