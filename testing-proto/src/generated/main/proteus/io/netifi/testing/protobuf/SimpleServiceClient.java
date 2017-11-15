@@ -85,12 +85,13 @@ public final class SimpleServiceClient implements SimpleService {
   }
 
   private static io.netty.buffer.ByteBuf serialize(final com.google.protobuf.MessageLite message) {
+    io.netty.buffer.ByteBuf byteBuf = io.netty.buffer.ByteBufAllocator.DEFAULT.directBuffer(message.getSerializedSize());
     try {
-      io.netty.buffer.ByteBuf byteBuf = io.netty.buffer.ByteBufAllocator.DEFAULT.directBuffer();
-      io.netty.buffer.ByteBufOutputStream bos = new io.netty.buffer.ByteBufOutputStream(byteBuf);
-      message.writeTo(bos);
+      message.writeTo(com.google.protobuf.CodedOutputStream.newInstance(byteBuf.nioBuffer(0, byteBuf.writableBytes())));
+      byteBuf.writerIndex(byteBuf.capacity());
       return byteBuf;
     } catch (Throwable t) {
+      byteBuf.release();
       throw new RuntimeException(t);
     }
   }
@@ -100,8 +101,8 @@ public final class SimpleServiceClient implements SimpleService {
       @java.lang.Override
       public T apply(io.rsocket.Payload payload) {
         try {
-          com.google.protobuf.ByteString data = com.google.protobuf.UnsafeByteOperations.unsafeWrap(payload.getData());
-          return parser.parseFrom(data);
+          com.google.protobuf.CodedInputStream is = com.google.protobuf.CodedInputStream.newInstance(payload.getData());
+          return parser.parseFrom(is);
         } catch (Throwable t) {
           throw new RuntimeException(t);
         } finally {

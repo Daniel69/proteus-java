@@ -26,12 +26,11 @@ public class Ping {
     SimpleServiceClient client = new SimpleServiceClient(rSocket);
     Histogram histogram = new Histogram(3600000000000L, 3);
     long start = System.nanoTime();
+    SimpleRequest request = SimpleRequest.newBuilder().setRequestMessage("hello").build();
     Flux.range(1, count)
         .flatMap(
             i -> {
               long s = System.nanoTime();
-              SimpleRequest request =
-                  SimpleRequest.newBuilder().setRequestMessage("hello -> " + i).build();
               return client
                   .requestReply(request)
                   .doOnNext(

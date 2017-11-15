@@ -555,19 +555,22 @@ static void PrintClient(const ServiceDescriptor* service,
   *vars,
   "private static $ByteBuf$ serialize(final $MessageLite$ message) {\n");
   p->Indent();
+  p->Print(
+    *vars,
+    "$ByteBuf$ byteBuf = $ByteBufAllocator$.DEFAULT.directBuffer(message.getSerializedSize());\n");
   p->Print("try {\n");
   p->Indent();
   p->Print(
     *vars,
-    "$ByteBuf$ byteBuf = $ByteBufAllocator$.DEFAULT.directBuffer();\n");
-  p->Print(
-    *vars,"$ByteBufOutputStream$ bos = new $ByteBufOutputStream$(byteBuf);\n");
-  p->Print("message.writeTo(bos);\n");
-  p->Print("return byteBuf;\n");
+    "message.writeTo($CodedOutputStream$.newInstance(byteBuf.nioBuffer(0, byteBuf.writableBytes())));\n"
+    "byteBuf.writerIndex(byteBuf.capacity());\n"
+    "return byteBuf;\n");
   p->Outdent();
   p->Print("} catch (Throwable t) {\n");
   p->Indent();
-  p->Print("throw new RuntimeException(t);\n");
+  p->Print(
+    "byteBuf.release();\n"
+    "throw new RuntimeException(t);\n");
   p->Outdent();
   p->Print("}\n");
   p->Outdent();
@@ -593,8 +596,8 @@ static void PrintClient(const ServiceDescriptor* service,
   p->Indent();
   p->Print(
       *vars,
-      "$ByteString$ data = $UnsafeByteOperations$.unsafeWrap(payload.getData());\n"
-      "return parser.parseFrom(data);\n");
+      "$CodedInputStream$ is = $CodedInputStream$.newInstance(payload.getData());\n"
+      "return parser.parseFrom(is);\n");
   p->Outdent();
   p->Print("} catch (Throwable t) {\n");
   p->Indent();
@@ -730,8 +733,8 @@ static void PrintServer(const ServiceDescriptor* service,
       p->Indent();
       p->Print(
           *vars,
-          "$ByteBufInputStream$ bis = new $ByteBufInputStream$(payload.sliceData());\n"
-          "return service.$lower_method_name$($input_type$.parseFrom(bis));\n");
+          "$CodedInputStream$ is = $CodedInputStream$.newInstance(payload.getData());\n"
+          "return service.$lower_method_name$($input_type$.parseFrom(is));\n");
       p->Outdent();
       p->Print("}\n");
     }
@@ -794,8 +797,8 @@ static void PrintServer(const ServiceDescriptor* service,
       p->Indent();
       p->Print(
           *vars,
-          "$ByteString$ data = $UnsafeByteOperations$.unsafeWrap(payload.sliceData().nioBuffer());\n"
-          "return service.$lower_method_name$($input_type$.parseFrom(data)).map(serializer);\n");
+          "$CodedInputStream$ is = $CodedInputStream$.newInstance(payload.getData());\n"
+          "return service.$lower_method_name$($input_type$.parseFrom(is)).map(serializer);\n");
       p->Outdent();
       p->Print("}\n");
     }
@@ -858,8 +861,8 @@ static void PrintServer(const ServiceDescriptor* service,
       p->Indent();
       p->Print(
           *vars,
-          "$ByteBufInputStream$ data = new $ByteBufInputStream$(payload.sliceData());\n"
-          "return service.$lower_method_name$($input_type$.parseFrom(data)).map(serializer);\n");
+          "$CodedInputStream$ is = $CodedInputStream$.newInstance(payload.getData());\n"
+          "return service.$lower_method_name$($input_type$.parseFrom(is)).map(serializer);\n");
       p->Outdent();
       p->Print("}\n");
     }
@@ -1008,22 +1011,22 @@ static void PrintServer(const ServiceDescriptor* service,
       "@$Override$\n"
       "public $Payload$ apply($MessageLite$ message) {\n");
   p->Indent();
+  p->Print(
+    *vars,
+    "$ByteBuf$ byteBuf = $ByteBufAllocator$.DEFAULT.directBuffer(message.getSerializedSize());\n");
   p->Print("try {\n");
   p->Indent();
   p->Print(
-      *vars,
-      "$ByteBuf$ byteBuf = $ByteBufAllocator$.DEFAULT.directBuffer();\n");
-  p->Print(
     *vars,
-    "$ByteBufOutputStream$ bos = new $ByteBufOutputStream$(byteBuf);\n");
-  p->Print("message.writeTo(bos);\n");
-  p->Print(
-      *vars,
-      "return $ByteBufPayload$.create(byteBuf);\n");
+    "message.writeTo($CodedOutputStream$.newInstance(byteBuf.nioBuffer(0, byteBuf.writableBytes())));\n"
+    "byteBuf.writerIndex(byteBuf.capacity());\n"
+    "return $ByteBufPayload$.create(byteBuf);\n");
   p->Outdent();
-  p->Print("} catch(Throwable t) {\n");
+  p->Print("} catch (Throwable t) {\n");
   p->Indent();
-  p->Print("throw new RuntimeException(t);\n");
+  p->Print(
+    "byteBuf.release();\n"
+    "throw new RuntimeException(t);\n");
   p->Outdent();
   p->Print("}\n");
   p->Outdent();
@@ -1052,8 +1055,8 @@ static void PrintServer(const ServiceDescriptor* service,
   p->Indent();
   p->Print(
       *vars,
-      "$ByteBufInputStream$ bis = new $ByteBufInputStream$(payload.sliceData());\n"
-      "return parser.parseFrom(bis);\n");
+      "$CodedInputStream$ is = $CodedInputStream$.newInstance(payload.getData());\n"
+      "return parser.parseFrom(is);\n");
   p->Outdent();
   p->Print("} catch (Throwable t) {\n");
   p->Indent();
@@ -1123,13 +1126,11 @@ void GenerateClient(const ServiceDescriptor* service,
   vars["Payload"] = "io.rsocket.Payload";
   vars["ByteBufPayload"] = "io.rsocket.util.ByteBufPayload";
   vars["ByteBuf"] = "io.netty.buffer.ByteBuf";
-  vars["ByteBufInputStream"] = "io.netty.buffer.ByteBufInputStream";
-  vars["ByteBufOutputStream"] = "io.netty.buffer.ByteBufOutputStream";
   vars["ByteBufAllocator"] = "io.netty.buffer.ByteBufAllocator";
   vars["ByteBuffer"] = "java.nio.ByteBuffer";
+  vars["CodedInputStream"] = "com.google.protobuf.CodedInputStream";
+  vars["CodedOutputStream"] = "com.google.protobuf.CodedOutputStream";
   vars["ProteusMetadata"] = "io.netifi.proteus.frames.ProteusMetadata";
-  vars["UnsafeByteOperations"] = "com.google.protobuf.UnsafeByteOperations";
-  vars["ByteString"] = "com.google.protobuf.ByteString";
   vars["MessageLite"] = "com.google.protobuf.MessageLite";
   vars["Parser"] = "com.google.protobuf.Parser";
 
@@ -1174,11 +1175,9 @@ void GenerateServer(const ServiceDescriptor* service,
   vars["ProteusMetadata"] = "io.netifi.proteus.frames.ProteusMetadata";
   vars["ByteBuf"] = "io.netty.buffer.ByteBuf";
   vars["ByteBuffer"] = "java.nio.ByteBuffer";
-  vars["ByteBufInputStream"] = "io.netty.buffer.ByteBufInputStream";
-  vars["ByteBufOutputStream"] = "io.netty.buffer.ByteBufOutputStream";
   vars["ByteBufAllocator"] = "io.netty.buffer.ByteBufAllocator";
-  vars["UnsafeByteOperations"] = "com.google.protobuf.UnsafeByteOperations";
-  vars["ByteString"] = "com.google.protobuf.ByteString";
+  vars["CodedInputStream"] = "com.google.protobuf.CodedInputStream";
+  vars["CodedOutputStream"] = "com.google.protobuf.CodedOutputStream";
   vars["MessageLite"] = "com.google.protobuf.MessageLite";
   vars["Parser"] = "com.google.protobuf.Parser";
 

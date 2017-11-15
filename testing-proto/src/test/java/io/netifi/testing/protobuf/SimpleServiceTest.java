@@ -54,7 +54,7 @@ public class SimpleServiceTest {
 
     System.out.println(responseMessage);
 
-    Assert.assertEquals("we got the message -> sending a message", responseMessage);
+    Assert.assertEquals("sending a message", responseMessage);
   }
   
   @Test(timeout = 5_000)
@@ -135,7 +135,7 @@ public class SimpleServiceTest {
       return Mono.fromCallable(
           () ->
               SimpleResponse.newBuilder()
-                  .setResponseMessage("we got the message -> " + message.getRequestMessage())
+                  .setResponseMessageBytes(message.getRequestMessageBytes())
                   .build());
     }
 

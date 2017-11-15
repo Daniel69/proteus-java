@@ -26,8 +26,8 @@ public final class SimpleServiceServer extends io.netifi.proteus.AbstractProteus
       io.netty.buffer.ByteBuf metadata = payload.sliceMetadata();
       switch(io.netifi.proteus.frames.ProteusMetadata.methodId(metadata)) {
         case SimpleService.METHOD_FIRE_AND_FORGET: {
-          io.netty.buffer.ByteBufInputStream bis = new io.netty.buffer.ByteBufInputStream(payload.sliceData());
-          return service.fireAndForget(io.netifi.testing.protobuf.SimpleRequest.parseFrom(bis));
+          com.google.protobuf.CodedInputStream is = com.google.protobuf.CodedInputStream.newInstance(payload.getData());
+          return service.fireAndForget(io.netifi.testing.protobuf.SimpleRequest.parseFrom(is));
         }
         default: {
           return reactor.core.publisher.Mono.error(new UnsupportedOperationException());
@@ -46,8 +46,8 @@ public final class SimpleServiceServer extends io.netifi.proteus.AbstractProteus
       io.netty.buffer.ByteBuf metadata = payload.sliceMetadata();
       switch(io.netifi.proteus.frames.ProteusMetadata.methodId(metadata)) {
         case SimpleService.METHOD_REQUEST_REPLY: {
-          com.google.protobuf.ByteString data = com.google.protobuf.UnsafeByteOperations.unsafeWrap(payload.sliceData().nioBuffer());
-          return service.requestReply(io.netifi.testing.protobuf.SimpleRequest.parseFrom(data)).map(serializer);
+          com.google.protobuf.CodedInputStream is = com.google.protobuf.CodedInputStream.newInstance(payload.getData());
+          return service.requestReply(io.netifi.testing.protobuf.SimpleRequest.parseFrom(is)).map(serializer);
         }
         default: {
           return reactor.core.publisher.Mono.error(new UnsupportedOperationException());
@@ -66,8 +66,8 @@ public final class SimpleServiceServer extends io.netifi.proteus.AbstractProteus
       io.netty.buffer.ByteBuf metadata = payload.sliceMetadata();
       switch(io.netifi.proteus.frames.ProteusMetadata.methodId(metadata)) {
         case SimpleService.METHOD_REQUEST_STREAM: {
-          io.netty.buffer.ByteBufInputStream data = new io.netty.buffer.ByteBufInputStream(payload.sliceData());
-          return service.requestStream(io.netifi.testing.protobuf.SimpleRequest.parseFrom(data)).map(serializer);
+          com.google.protobuf.CodedInputStream is = com.google.protobuf.CodedInputStream.newInstance(payload.getData());
+          return service.requestStream(io.netifi.testing.protobuf.SimpleRequest.parseFrom(is)).map(serializer);
         }
         default: {
           return reactor.core.publisher.Flux.error(new UnsupportedOperationException());
@@ -118,12 +118,13 @@ public final class SimpleServiceServer extends io.netifi.proteus.AbstractProteus
     new java.util.function.Function<com.google.protobuf.MessageLite, io.rsocket.Payload>() {
       @java.lang.Override
       public io.rsocket.Payload apply(com.google.protobuf.MessageLite message) {
+        io.netty.buffer.ByteBuf byteBuf = io.netty.buffer.ByteBufAllocator.DEFAULT.directBuffer(message.getSerializedSize());
         try {
-          io.netty.buffer.ByteBuf byteBuf = io.netty.buffer.ByteBufAllocator.DEFAULT.directBuffer();
-          io.netty.buffer.ByteBufOutputStream bos = new io.netty.buffer.ByteBufOutputStream(byteBuf);
-          message.writeTo(bos);
+          message.writeTo(com.google.protobuf.CodedOutputStream.newInstance(byteBuf.nioBuffer(0, byteBuf.writableBytes())));
+          byteBuf.writerIndex(byteBuf.capacity());
           return io.rsocket.util.ByteBufPayload.create(byteBuf);
-        } catch(Throwable t) {
+        } catch (Throwable t) {
+          byteBuf.release();
           throw new RuntimeException(t);
         }
       }
@@ -134,8 +135,8 @@ public final class SimpleServiceServer extends io.netifi.proteus.AbstractProteus
       @java.lang.Override
       public T apply(io.rsocket.Payload payload) {
         try {
-          io.netty.buffer.ByteBufInputStream bis = new io.netty.buffer.ByteBufInputStream(payload.sliceData());
-          return parser.parseFrom(bis);
+          com.google.protobuf.CodedInputStream is = com.google.protobuf.CodedInputStream.newInstance(payload.getData());
+          return parser.parseFrom(is);
         } catch (Throwable t) {
           throw new RuntimeException(t);
         } finally {
