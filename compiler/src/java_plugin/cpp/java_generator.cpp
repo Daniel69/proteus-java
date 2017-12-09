@@ -407,12 +407,57 @@ static void PrintClient(const ServiceDescriptor* service,
 
   p->Print(
       *vars,
-      "private final $RSocket$ rSocket;\n\n"
-      "public $client_class_name$($RSocket$ rSocket) {\n");
+      "private final $RSocket$ rSocket;\n");
+
+  // RPC metrics
+  for (int i = 0; i < service->method_count(); ++i) {
+    const MethodDescriptor* method = service->method(i);
+    (*vars)["output_type"] = MessageFullJavaName(method->output_type());
+    (*vars)["lower_method_name"] = LowerMethodName(method);
+    bool client_streaming = method->client_streaming();
+    bool server_streaming = method->server_streaming();
+
+    if (server_streaming) {
+      p->Print(
+          *vars,
+          "private final $Function$<? super $Publisher$<$output_type$>, ? extends $Publisher$<$output_type$>> $lower_method_name$;\n");
+    } else if (client_streaming) {
+      p->Print(
+          *vars,
+          "private final $Function$<? super $Publisher$<$output_type$>, ? extends $Publisher$<$output_type$>> $lower_method_name$;\n");
+    } else {
+      const Descriptor* output_type = method->output_type();
+      if (output_type->field_count() > 0) {
+        p->Print(
+            *vars,
+            "private final $Function$<? super $Publisher$<$output_type$>, ? extends $Publisher$<$output_type$>> $lower_method_name$;\n");
+      } else {
+        p->Print(
+            *vars,
+            "private final $Function$<? super $Publisher$<Void>, ? extends $Publisher$<Void>> $lower_method_name$;\n");
+      }
+    }
+  }
+
+  p->Print(
+      *vars,
+      "\n"
+      "public $client_class_name$($RSocket$ rSocket, $MeterRegistry$ registry) {\n");
   p->Indent();
   p->Print(
       *vars,
       "this.rSocket = rSocket;\n");
+
+  // RPC metrics
+  for (int i = 0; i < service->method_count(); ++i) {
+    const MethodDescriptor* method = service->method(i);
+    (*vars)["lower_method_name"] = LowerMethodName(method);
+
+    p->Print(
+        *vars,
+        "this.$lower_method_name$ = $ProteusMetrics$.timed(registry, \"proteus.client\", \"namespace\", \"$Package$\", \"service\", \"$service_name$\", \"method\", \"$lower_method_name$\");\n");
+  }
+
   p->Outdent();
   p->Print("}\n\n");
 
@@ -496,11 +541,11 @@ static void PrintClient(const ServiceDescriptor* service,
       if (server_streaming) {
         p->Print(
             *vars,
-            "})).map(deserializer($output_type$.parser()));\n");
+            "})).map(deserializer($output_type$.parser())).transform($lower_method_name$);\n");
       } else {
         p->Print(
             *vars,
-            "})).map(deserializer($output_type$.parser())).single();\n");
+            "})).map(deserializer($output_type$.parser())).single().transform($lower_method_name$);\n");
       }
       p->Outdent();
       p->Outdent();
@@ -511,37 +556,78 @@ static void PrintClient(const ServiceDescriptor* service,
           *vars,
           "($input_type$ message) {\n");
       p->Indent();
-      p->Print(
-          *vars,
-          "final int length = $ProteusMetadata$.computeLength();\n"
-          "$ByteBuf$ metadata = $ByteBufAllocator$.DEFAULT.directBuffer(length);\n"
-          "$ProteusMetadata$.encode(metadata, $service_name$.$namespace_id_name$, $service_name$.$service_id_name$, $service_name$.$method_id_name$);\n"
-          "$ByteBuf$ data = serialize(message);\n\n");
 
       if (server_streaming) {
         p->Print(
             *vars,
-            "return rSocket.requestStream($ByteBufPayload$.create(data, metadata))\n");
+            "return $Flux$.defer(new $Supplier$<$Flux$<$Payload$>>() {\n");
         p->Indent();
         p->Print(
             *vars,
-            ".map(deserializer($output_type$.parser()));\n");
+            "@$Override$\n"
+            "public $Flux$<$Payload$> get() {\n");
+        p->Indent();
+        p->Print(
+            *vars,
+            "final int length = $ProteusMetadata$.computeLength();\n"
+            "$ByteBuf$ metadata = $ByteBufAllocator$.DEFAULT.directBuffer(length);\n"
+            "$ProteusMetadata$.encode(metadata, $service_name$.$namespace_id_name$, $service_name$.$service_id_name$, $service_name$.$method_id_name$);\n"
+            "$ByteBuf$ data = serialize(message);\n"
+            "return rSocket.requestStream($ByteBufPayload$.create(data, metadata));\n");
         p->Outdent();
+        p->Print("}\n");
+        p->Outdent();
+        p->Print(
+            *vars,
+            "}).map(deserializer($output_type$.parser())).transform($lower_method_name$);\n");
       } else {
         const Descriptor* output_type = method->output_type();
         if (output_type->field_count() > 0) {
           p->Print(
               *vars,
-              "return rSocket.requestResponse($ByteBufPayload$.create(data, metadata))\n");
+              "return $Mono$.defer(new $Supplier$<$Mono$<$Payload$>>() {\n");
           p->Indent();
           p->Print(
               *vars,
-              ".map(deserializer($output_type$.parser()));\n");
+              "@$Override$\n"
+              "public $Mono$<$Payload$> get() {\n");
+          p->Indent();
+          p->Print(
+              *vars,
+              "final int length = $ProteusMetadata$.computeLength();\n"
+              "$ByteBuf$ metadata = $ByteBufAllocator$.DEFAULT.directBuffer(length);\n"
+              "$ProteusMetadata$.encode(metadata, $service_name$.$namespace_id_name$, $service_name$.$service_id_name$, $service_name$.$method_id_name$);\n"
+              "$ByteBuf$ data = serialize(message);\n"
+              "return rSocket.requestResponse($ByteBufPayload$.create(data, metadata));\n");
           p->Outdent();
+          p->Print("}\n");
+          p->Outdent();
+          p->Print(
+              *vars,
+              "}).map(deserializer($output_type$.parser())).transform($lower_method_name$);\n");
         } else {
           p->Print(
               *vars,
+              "return $Mono$.defer(new $Supplier$<$Mono$<Void>>() {\n");
+          p->Indent();
+          p->Print(
+              *vars,
+              "@$Override$\n"
+              "public $Mono$<Void> get() {\n");
+          p->Indent();
+          p->Print(
+              *vars,
+              "final int length = $ProteusMetadata$.computeLength();\n"
+              "$ByteBuf$ metadata = $ByteBufAllocator$.DEFAULT.directBuffer(length);\n"
+              "$ProteusMetadata$.encode(metadata, $service_name$.$namespace_id_name$, $service_name$.$service_id_name$, $service_name$.$method_id_name$);\n"
+              "$ByteBuf$ data = serialize(message);\n"
               "return rSocket.fireAndForget($ByteBufPayload$.create(data, metadata));\n");
+          p->Outdent();
+          p->Print("}\n");
+          p->Outdent();
+          p->Print(
+              *vars,
+              "}).transform($lower_method_name$);\n");
         }
       }
 
@@ -647,12 +733,56 @@ static void PrintServer(const ServiceDescriptor* service,
 
   p->Print(
       *vars,
-      "private final $service_name$ service;\n\n"
-      "public $server_class_name$($service_name$ service) {\n");
+      "private final $service_name$ service;\n");
+
+  // RPC metrics
+  for (int i = 0; i < service->method_count(); ++i) {
+    const MethodDescriptor* method = service->method(i);
+    (*vars)["lower_method_name"] = LowerMethodName(method);
+    bool client_streaming = method->client_streaming();
+    bool server_streaming = method->server_streaming();
+
+    if (server_streaming) {
+      p->Print(
+          *vars,
+          "private final $Function$<? super $Publisher$<$Payload$>, ? extends $Publisher$<$Payload$>> $lower_method_name$;\n");
+    } else if (client_streaming) {
+      p->Print(
+          *vars,
+          "private final $Function$<? super $Publisher$<$Payload$>, ? extends $Publisher$<$Payload$>> $lower_method_name$;\n");
+    } else {
+      const Descriptor* output_type = method->output_type();
+      if (output_type->field_count() > 0) {
+        p->Print(
+            *vars,
+            "private final $Function$<? super $Publisher$<$Payload$>, ? extends $Publisher$<$Payload$>> $lower_method_name$;\n");
+      } else {
+        p->Print(
+            *vars,
+            "private final $Function$<? super $Publisher$<Void>, ? extends $Publisher$<Void>> $lower_method_name$;\n");
+      }
+    }
+  }
+
+  p->Print(
+      *vars,
+      "\n"
+      "public $server_class_name$($service_name$ service, $MeterRegistry$ registry) {\n");
   p->Indent();
   p->Print(
       *vars,
       "this.service = service;\n");
+
+  // RPC metrics
+  for (int i = 0; i < service->method_count(); ++i) {
+    const MethodDescriptor* method = service->method(i);
+    (*vars)["lower_method_name"] = LowerMethodName(method);
+
+    p->Print(
+        *vars,
+        "this.$lower_method_name$ = $ProteusMetrics$.timed(registry, \"proteus.server\", \"namespace\", \"$Package$\", \"service\", \"$service_name$\", \"method\", \"$lower_method_name$\");\n");
+  }
+
   p->Outdent();
   p->Print("}\n\n");
 
@@ -798,7 +928,7 @@ static void PrintServer(const ServiceDescriptor* service,
       p->Print(
           *vars,
           "$CodedInputStream$ is = $CodedInputStream$.newInstance(payload.getData());\n"
-          "return service.$lower_method_name$($input_type$.parseFrom(is)).map(serializer);\n");
+          "return service.$lower_method_name$($input_type$.parseFrom(is)).map(serializer).transform($lower_method_name$);\n");
       p->Outdent();
       p->Print("}\n");
     }
@@ -862,7 +992,7 @@ static void PrintServer(const ServiceDescriptor* service,
       p->Print(
           *vars,
           "$CodedInputStream$ is = $CodedInputStream$.newInstance(payload.getData());\n"
-          "return service.$lower_method_name$($input_type$.parseFrom(is)).map(serializer);\n");
+          "return service.$lower_method_name$($input_type$.parseFrom(is)).map(serializer).transform($lower_method_name$);\n");
       p->Outdent();
       p->Print("}\n");
     }
@@ -934,11 +1064,11 @@ static void PrintServer(const ServiceDescriptor* service,
       if (method->server_streaming()) {
         p->Print(
             *vars,
-            "return service.$lower_method_name$(messages).map(serializer);\n");
+            "return service.$lower_method_name$(messages).map(serializer).transform($lower_method_name$);\n");
       } else {
         p->Print(
             *vars,
-            "return service.$lower_method_name$(messages).map(serializer).$flux$();\n");
+            "return service.$lower_method_name$(messages).map(serializer).transform($lower_method_name$).$flux$();\n");
       }
 
       p->Outdent();
@@ -1102,9 +1232,6 @@ void GenerateInterface(const ServiceDescriptor* service,
 
   // Package string is used to fully qualify method names.
   vars["Package"] = service->file()->package();
-  if (!vars["Package"].empty()) {
-    vars["Package"].append(".");
-  }
   PrintInterface(service, &vars, &printer, flavor, disable_version);
 }
 
@@ -1119,6 +1246,7 @@ void GenerateClient(const ServiceDescriptor* service,
   vars["Mono"] = "reactor.core.publisher.Mono";
   vars["from"] = "from";
   vars["Function"] = "java.util.function.Function";
+  vars["Supplier"] = "java.util.function.Supplier";
   vars["Override"] = "java.lang.Override";
   vars["Publisher"] = "org.reactivestreams.Publisher";
   vars["Generated"] = "javax.annotation.Generated";
@@ -1131,6 +1259,8 @@ void GenerateClient(const ServiceDescriptor* service,
   vars["CodedInputStream"] = "com.google.protobuf.CodedInputStream";
   vars["CodedOutputStream"] = "com.google.protobuf.CodedOutputStream";
   vars["ProteusMetadata"] = "io.netifi.proteus.frames.ProteusMetadata";
+  vars["ProteusMetrics"] = "io.netifi.proteus.metrics.ProteusMetrics";
+  vars["MeterRegistry"] = "io.micrometer.core.instrument.MeterRegistry";
   vars["MessageLite"] = "com.google.protobuf.MessageLite";
   vars["Parser"] = "com.google.protobuf.Parser";
 
@@ -1144,9 +1274,6 @@ void GenerateClient(const ServiceDescriptor* service,
 
   // Package string is used to fully qualify method names.
   vars["Package"] = service->file()->package();
-  if (!vars["Package"].empty()) {
-    vars["Package"].append(".");
-  }
   PrintClient(service, &vars, &printer, flavor, disable_version);
 }
 
@@ -1163,6 +1290,7 @@ void GenerateServer(const ServiceDescriptor* service,
   vars["flux"] = "flux";
   vars["flatMap"] = "flatMapMany";
   vars["Function"] = "java.util.function.Function";
+  vars["Supplier"] = "java.util.function.Supplier";
   vars["BiFunction"] = "java.util.function.BiFunction";
   vars["Override"] = "java.lang.Override";
   vars["Publisher"] = "org.reactivestreams.Publisher";
@@ -1173,6 +1301,8 @@ void GenerateServer(const ServiceDescriptor* service,
   vars["SwitchTransform"] = "io.rsocket.internal.SwitchTransform";
   vars["AbstractProteusService"] = "io.netifi.proteus.AbstractProteusService";
   vars["ProteusMetadata"] = "io.netifi.proteus.frames.ProteusMetadata";
+  vars["ProteusMetrics"] = "io.netifi.proteus.metrics.ProteusMetrics";
+  vars["MeterRegistry"] = "io.micrometer.core.instrument.MeterRegistry";
   vars["ByteBuf"] = "io.netty.buffer.ByteBuf";
   vars["ByteBuffer"] = "java.nio.ByteBuffer";
   vars["ByteBufAllocator"] = "io.netty.buffer.ByteBufAllocator";
@@ -1191,9 +1321,6 @@ void GenerateServer(const ServiceDescriptor* service,
 
   // Package string is used to fully qualify method names.
   vars["Package"] = service->file()->package();
-  if (!vars["Package"].empty()) {
-    vars["Package"].append(".");
-  }
   PrintServer(service, &vars, &printer, flavor, disable_version);
 }
 

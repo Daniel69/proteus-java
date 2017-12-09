@@ -8,7 +8,6 @@ buildscript {
   }
   dependencies {
     classpath 'com.google.gradle:osdetector-gradle-plugin:1.4.0'
-    classpath 'ru.vyarus:gradle-animalsniffer-plugin:1.4.0'
     classpath 'net.ltgt.gradle:gradle-errorprone-plugin:0.0.11'
     classpath "me.champeau.gradle:jmh-gradle-plugin:0.4.4"
   }
@@ -25,8 +24,7 @@ subprojects {
 
     apply plugin: "me.champeau.gradle.jmh"
     apply plugin: "com.google.osdetector"
-    // The plugin only has an effect if a signature is specified
-    apply plugin: "ru.vyarus.animalsniffer"
+
     if (!rootProject.hasProperty('errorProne') || rootProject.errorProne.toBoolean()) {
       apply plugin: "net.ltgt.errorprone"
 
@@ -47,19 +45,14 @@ subprojects {
     }
 
     group = "io.netifi.proteus"
-    version = "0.2.4" // CURRENT_PROTEUS_VERSION
+    version = "0.2.5" // CURRENT_PROTEUS_VERSION
 
-    sourceCompatibility = 1.6
-    targetCompatibility = 1.6
+    sourceCompatibility = 1.8
+    targetCompatibility = 1.8
 
     repositories {
-        mavenCentral()
-        mavenLocal()
         jcenter()
-        maven { url 'http://repo.spring.io/milestone' }
-        maven { url "https://oss.sonatype.org/content/repositories/snapshots/" }
-        maven {  url 'https://oss.jfrog.org/libs-snapshot' }
-        maven { url 'https://dl.bintray.com/rsocket/RSocket' }
+        maven { url 'https://repo.spring.io/libs-snapshot' }
     }
 
     [compileJava, compileTestJava, compileJmhJava].each() {
@@ -96,6 +89,7 @@ subprojects {
         javaPluginPath = "$rootDir/compiler/build/exe/java_plugin/$protocPluginBaseName$exeSuffix"
 
         rSocketVersion = '0.9.19'
+        micrometerVersion = '1.0.0-rc.5'
         protobufVersion = '3.5.0'
         protocVersion = protobufVersion
 
@@ -182,6 +176,7 @@ subprojects {
 
                 rsocket_core: "io.rsocket:rsocket-core:${rSocketVersion}",
                 rsocket_transport: "io.rsocket:rsocket-transport-netty:${rSocketVersion}",
+                micrometer_core: "io.micrometer:micrometer-core:${micrometerVersion}",
 
                 protobuf: "com.google.protobuf:protobuf-java:${protobufVersion}",
                 protobuf_lite: "com.google.protobuf:protobuf-lite:3.0.1",

@@ -1,5 +1,6 @@
 package io.netifi.testing.protobuf;
 
+import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import io.netifi.proteus.rs.RequestHandlingRSocket;
 import io.rsocket.Frame;
 import io.rsocket.RSocket;
@@ -21,11 +22,12 @@ import java.util.function.Function;
 
 public class SimpleServiceTest {
 
+  private static SimpleMeterRegistry registry = new SimpleMeterRegistry();
   private static RSocket rSocket;
 
   @BeforeClass
   public static void setup() {
-    SimpleServiceServer serviceServer = new SimpleServiceServer(new DefaultSimpleService());
+    SimpleServiceServer serviceServer = new SimpleServiceServer(new DefaultSimpleService(), registry);
 
     RSocketFactory.receive()
         .frameDecoder(Frame::retain)
@@ -44,7 +46,7 @@ public class SimpleServiceTest {
 
   @Test
   public void testRequestReply() {
-    SimpleServiceClient client = new SimpleServiceClient(rSocket);
+    SimpleServiceClient client = new SimpleServiceClient(rSocket, registry);
     SimpleResponse response =
         client
             .requestReply(SimpleRequest.newBuilder().setRequestMessage("sending a message").build())
@@ -59,7 +61,7 @@ public class SimpleServiceTest {
   
   @Test(timeout = 5_000)
   public void testStreaming() {
-    SimpleServiceClient client = new SimpleServiceClient(rSocket);
+    SimpleServiceClient client = new SimpleServiceClient(rSocket, registry);
     SimpleResponse response =
         client
             .requestStream(
@@ -73,7 +75,7 @@ public class SimpleServiceTest {
 
   @Test(timeout = 5_000)
   public void testStreamingPrintEach() {
-    SimpleServiceClient client = new SimpleServiceClient(rSocket);
+    SimpleServiceClient client = new SimpleServiceClient(rSocket, registry);
     client
         .requestStream(SimpleRequest.newBuilder().setRequestMessage("sending a message").build())
         .take(5)
@@ -83,7 +85,7 @@ public class SimpleServiceTest {
 
   @Test(timeout = 3_000)
   public void testClientStreamingRpc() {
-    SimpleServiceClient client = new SimpleServiceClient(rSocket);
+    SimpleServiceClient client = new SimpleServiceClient(rSocket, registry);
 
     Flux<SimpleRequest> requests =
         Flux.range(1, 11)
@@ -97,7 +99,7 @@ public class SimpleServiceTest {
 
   @Test(timeout = 15_000)
   public void testBidiStreamingRpc() {
-    SimpleServiceClient client = new SimpleServiceClient(rSocket);
+    SimpleServiceClient client = new SimpleServiceClient(rSocket, registry);
 
     Flux<SimpleRequest> requests =
         Flux.range(1, 500_000)
@@ -113,7 +115,7 @@ public class SimpleServiceTest {
   public void testFireAndForget() throws Exception {
     int count = 1000;
     CountDownLatch latch = new CountDownLatch(count);
-    SimpleServiceClient client = new SimpleServiceClient(rSocket);
+    SimpleServiceClient client = new SimpleServiceClient(rSocket, registry);
     Flux.range(1, count)
         .flatMap(
             i ->
