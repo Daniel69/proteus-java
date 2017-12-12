@@ -15,7 +15,6 @@ buildscript {
 
 dependencies {
     compile project(':proteus-core'),
-            project(':proteus-core-java'),
             libraries.protobuf
 
     testCompile 'org.hdrhistogram:HdrHistogram:2.1.10'

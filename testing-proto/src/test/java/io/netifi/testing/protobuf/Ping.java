@@ -1,11 +1,14 @@
 package io.netifi.testing.protobuf;
 
+import io.micrometer.core.instrument.Timer;
+import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import io.rsocket.Frame;
 import io.rsocket.RSocket;
 import io.rsocket.RSocketFactory;
 import io.rsocket.transport.netty.client.TcpClientTransport;
-import org.HdrHistogram.Histogram;
 import reactor.core.publisher.Flux;
+
+import java.util.concurrent.TimeUnit;
 
 public class Ping {
   public static void main(String... args) {
@@ -23,28 +26,24 @@ public class Ping {
 
   private static void ping(int count, RSocket rSocket) {
     System.out.println("starting -> " + count);
-    SimpleServiceClient client = new SimpleServiceClient(rSocket);
-    Histogram histogram = new Histogram(3600000000000L, 3);
+    SimpleMeterRegistry registry = new SimpleMeterRegistry();
+    SimpleServiceClient client = new SimpleServiceClient(rSocket, registry);
     long start = System.nanoTime();
     SimpleRequest request = SimpleRequest.newBuilder().setRequestMessage("hello").build();
     Flux.range(1, count)
         .flatMap(
-            i -> {
-              long s = System.nanoTime();
-              return client
-                  .requestReply(request)
-                  .doOnNext(
-                      r -> {
-                        histogram.recordValue(System.nanoTime() - s);
-                      });
-            }, 16)
+            i -> client.requestReply(request), 16)
         .blockLast();
-    histogram.outputPercentileDistribution(System.out, 1000.0d);
     double completedMillis = (System.nanoTime() - start) / 1_000_000d;
     double rps = count / ((System.nanoTime() - start) / 1_000_000_000d);
     System.out.println("test complete in " + completedMillis + "ms");
     System.out.println("test rps " + rps);
-    System.out.println();
+    Timer timer = registry.find("proteus.client.latency").tags("method", "requestReply").timer().get();
+    System.out.println("p50: " + timer.percentile(0.50, TimeUnit.MILLISECONDS) + "ms");
+    System.out.println("p90: " + timer.percentile(0.90, TimeUnit.MILLISECONDS) + "ms");
+    System.out.println("p99: " + timer.percentile(0.99, TimeUnit.MILLISECONDS) + "ms");
+    System.out.println("p99.9: " + timer.percentile(0.999, TimeUnit.MILLISECONDS) + "ms");
+    System.out.println("max: " + timer.max(TimeUnit.MILLISECONDS) + "ms");
     System.out.println();
   }
 }
