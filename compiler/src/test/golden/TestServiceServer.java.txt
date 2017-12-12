@@ -39,7 +39,7 @@ public final class TestServiceServer extends io.netifi.proteus.AbstractProteusSe
       switch(io.netifi.proteus.frames.ProteusMetadata.methodId(metadata)) {
         case TestService.METHOD_EMPTY_CALL: {
           com.google.protobuf.CodedInputStream is = com.google.protobuf.CodedInputStream.newInstance(payload.getData());
-          return service.emptyCall(io.netifi.testing.integration.Test.SimpleRequest.parseFrom(is));
+          return service.emptyCall(io.netifi.testing.integration.Test.SimpleRequest.parseFrom(is), metadata);
         }
         default: {
           return reactor.core.publisher.Mono.error(new UnsupportedOperationException());
@@ -59,7 +59,7 @@ public final class TestServiceServer extends io.netifi.proteus.AbstractProteusSe
       switch(io.netifi.proteus.frames.ProteusMetadata.methodId(metadata)) {
         case TestService.METHOD_UNARY_CALL: {
           com.google.protobuf.CodedInputStream is = com.google.protobuf.CodedInputStream.newInstance(payload.getData());
-          return service.unaryCall(io.netifi.testing.integration.Test.SimpleRequest.parseFrom(is)).map(serializer).transform(unaryCall);
+          return service.unaryCall(io.netifi.testing.integration.Test.SimpleRequest.parseFrom(is), metadata).map(serializer).transform(unaryCall);
         }
         default: {
           return reactor.core.publisher.Mono.error(new UnsupportedOperationException());
@@ -79,7 +79,7 @@ public final class TestServiceServer extends io.netifi.proteus.AbstractProteusSe
       switch(io.netifi.proteus.frames.ProteusMetadata.methodId(metadata)) {
         case TestService.METHOD_STREAMING_OUTPUT_CALL: {
           com.google.protobuf.CodedInputStream is = com.google.protobuf.CodedInputStream.newInstance(payload.getData());
-          return service.streamingOutputCall(io.netifi.testing.integration.Test.StreamingOutputCallRequest.parseFrom(is)).map(serializer).transform(streamingOutputCall);
+          return service.streamingOutputCall(io.netifi.testing.integration.Test.StreamingOutputCallRequest.parseFrom(is), metadata).map(serializer).transform(streamingOutputCall);
         }
         default: {
           return reactor.core.publisher.Flux.error(new UnsupportedOperationException());
@@ -100,17 +100,17 @@ public final class TestServiceServer extends io.netifi.proteus.AbstractProteusSe
         case TestService.METHOD_STREAMING_INPUT_CALL: {
           reactor.core.publisher.Flux<io.netifi.testing.integration.Test.StreamingInputCallRequest> messages =
             publisher.map(deserializer(io.netifi.testing.integration.Test.StreamingInputCallRequest.parser()));
-          return service.streamingInputCall(messages).map(serializer).transform(streamingInputCall).flux();
+          return service.streamingInputCall(messages, metadata).map(serializer).transform(streamingInputCall).flux();
         }
         case TestService.METHOD_FULL_BIDI_CALL: {
           reactor.core.publisher.Flux<io.netifi.testing.integration.Test.StreamingOutputCallRequest> messages =
             publisher.map(deserializer(io.netifi.testing.integration.Test.StreamingOutputCallRequest.parser()));
-          return service.fullBidiCall(messages).map(serializer).transform(fullBidiCall);
+          return service.fullBidiCall(messages, metadata).map(serializer).transform(fullBidiCall);
         }
         case TestService.METHOD_HALF_BIDI_CALL: {
           reactor.core.publisher.Flux<io.netifi.testing.integration.Test.StreamingOutputCallRequest> messages =
             publisher.map(deserializer(io.netifi.testing.integration.Test.StreamingOutputCallRequest.parser()));
-          return service.halfBidiCall(messages).map(serializer).transform(halfBidiCall);
+          return service.halfBidiCall(messages, metadata).map(serializer).transform(halfBidiCall);
         }
         default: {
           return reactor.core.publisher.Flux.error(new UnsupportedOperationException());

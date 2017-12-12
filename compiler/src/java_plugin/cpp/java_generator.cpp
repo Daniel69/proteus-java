@@ -370,10 +370,10 @@ static void PrintInterface(const ServiceDescriptor* service,
     }
     if (client_streaming) {
       // Bidirectional streaming or client streaming
-      p->Print(*vars, "($Publisher$<$input_type$> messages);\n");
+      p->Print(*vars, "($Publisher$<$input_type$> messages, $ByteBuf$ metadata);\n");
     } else {
       // Server streaming or simple RPC
-      p->Print(*vars, "($input_type$ message);\n");
+      p->Print(*vars, "($input_type$ message, $ByteBuf$ metadata);\n");
     }
   }
 
@@ -475,6 +475,51 @@ static void PrintClient(const ServiceDescriptor* service,
     if (server_streaming) {
       p->Print(
           *vars,
+          "public $Flux$<$output_type$> $lower_method_name$");
+    } else if (client_streaming) {
+      p->Print(
+          *vars,
+          "public $Mono$<$output_type$> $lower_method_name$");
+    } else {
+      const Descriptor* output_type = method->output_type();
+      if (output_type->field_count() > 0) {
+        p->Print(
+            *vars,
+            "public $Mono$<$output_type$> $lower_method_name$");
+      } else {
+        p->Print(
+            *vars,
+            "public $Mono$<Void> $lower_method_name$");
+      }
+    }
+
+    if (client_streaming) {
+      p->Print(
+          *vars,
+          "($Publisher$<$input_type$> messages) {\n");
+      p->Indent();
+      p->Print(
+          *vars,
+          "return $lower_method_name$(messages, $Unpooled$.EMPTY_BUFFER);\n");
+      p->Outdent();
+      p->Print("}\n\n");
+    } else {
+      // Server streaming or simple RPC
+      p->Print(
+          *vars,
+          "($input_type$ message) {\n");
+      p->Indent();
+      p->Print(
+          *vars,
+          "return $lower_method_name$(message, $Unpooled$.EMPTY_BUFFER);\n");
+      p->Outdent();
+      p->Print("}\n\n");
+    }
+
+    // Method signature
+    if (server_streaming) {
+      p->Print(
+          *vars,
           "@$Override$\n"
           "public $Flux$<$output_type$> $lower_method_name$");
     } else if (client_streaming) {
@@ -500,7 +545,7 @@ static void PrintClient(const ServiceDescriptor* service,
       // Bidirectional streaming or client streaming
       p->Print(
           *vars,
-          "($Publisher$<$input_type$> messages) {\n");
+          "($Publisher$<$input_type$> messages, $ByteBuf$ metadata) {\n");
       p->Indent();
       p->Print(
           *vars,
@@ -524,9 +569,9 @@ static void PrintClient(const ServiceDescriptor* service,
       p->Print(
           *vars,
           "final int length = $ProteusMetadata$.computeLength();\n"
-          "final $ByteBuf$ metadata = $ByteBufAllocator$.DEFAULT.directBuffer(length);\n"
-          "$ProteusMetadata$.encode(metadata, $service_name$.$namespace_id_name$, $service_name$.$service_id_name$, $service_name$.$method_id_name$);\n"
-          "return $ByteBufPayload$.create(data, metadata);\n");
+          "final $ByteBuf$ metadataBuf = $ByteBufAllocator$.DEFAULT.directBuffer(length);\n"
+          "$ProteusMetadata$.encode(metadataBuf, $service_name$.$namespace_id_name$, $service_name$.$service_id_name$, $service_name$.$method_id_name$, metadata);\n"
+          "return $ByteBufPayload$.create(data, metadataBuf);\n");
       p->Outdent();
       p->Print("} else {\n");
       p->Indent();
@@ -554,7 +599,7 @@ static void PrintClient(const ServiceDescriptor* service,
       // Server streaming or simple RPC
       p->Print(
           *vars,
-          "($input_type$ message) {\n");
+          "($input_type$ message, $ByteBuf$ metadata) {\n");
       p->Indent();
 
       if (server_streaming) {
@@ -570,10 +615,10 @@ static void PrintClient(const ServiceDescriptor* service,
         p->Print(
             *vars,
             "final int length = $ProteusMetadata$.computeLength();\n"
-            "$ByteBuf$ metadata = $ByteBufAllocator$.DEFAULT.directBuffer(length);\n"
-            "$ProteusMetadata$.encode(metadata, $service_name$.$namespace_id_name$, $service_name$.$service_id_name$, $service_name$.$method_id_name$);\n"
+            "$ByteBuf$ metadataBuf = $ByteBufAllocator$.DEFAULT.directBuffer(length);\n"
+            "$ProteusMetadata$.encode(metadataBuf, $service_name$.$namespace_id_name$, $service_name$.$service_id_name$, $service_name$.$method_id_name$, metadata);\n"
             "$ByteBuf$ data = serialize(message);\n"
-            "return rSocket.requestStream($ByteBufPayload$.create(data, metadata));\n");
+            "return rSocket.requestStream($ByteBufPayload$.create(data, metadataBuf));\n");
         p->Outdent();
         p->Print("}\n");
         p->Outdent();
@@ -595,10 +640,10 @@ static void PrintClient(const ServiceDescriptor* service,
           p->Print(
               *vars,
               "final int length = $ProteusMetadata$.computeLength();\n"
-              "$ByteBuf$ metadata = $ByteBufAllocator$.DEFAULT.directBuffer(length);\n"
-              "$ProteusMetadata$.encode(metadata, $service_name$.$namespace_id_name$, $service_name$.$service_id_name$, $service_name$.$method_id_name$);\n"
+              "$ByteBuf$ metadataBuf = $ByteBufAllocator$.DEFAULT.directBuffer(length);\n"
+              "$ProteusMetadata$.encode(metadataBuf, $service_name$.$namespace_id_name$, $service_name$.$service_id_name$, $service_name$.$method_id_name$, metadata);\n"
               "$ByteBuf$ data = serialize(message);\n"
-              "return rSocket.requestResponse($ByteBufPayload$.create(data, metadata));\n");
+              "return rSocket.requestResponse($ByteBufPayload$.create(data, metadataBuf));\n");
           p->Outdent();
           p->Print("}\n");
           p->Outdent();
@@ -618,10 +663,10 @@ static void PrintClient(const ServiceDescriptor* service,
           p->Print(
               *vars,
               "final int length = $ProteusMetadata$.computeLength();\n"
-              "$ByteBuf$ metadata = $ByteBufAllocator$.DEFAULT.directBuffer(length);\n"
-              "$ProteusMetadata$.encode(metadata, $service_name$.$namespace_id_name$, $service_name$.$service_id_name$, $service_name$.$method_id_name$);\n"
+              "$ByteBuf$ metadataBuf = $ByteBufAllocator$.DEFAULT.directBuffer(length);\n"
+              "$ProteusMetadata$.encode(metadataBuf, $service_name$.$namespace_id_name$, $service_name$.$service_id_name$, $service_name$.$method_id_name$, metadata);\n"
               "$ByteBuf$ data = serialize(message);\n"
-              "return rSocket.fireAndForget($ByteBufPayload$.create(data, metadata));\n");
+              "return rSocket.fireAndForget($ByteBufPayload$.create(data, metadataBuf));\n");
           p->Outdent();
           p->Print("}\n");
           p->Outdent();
@@ -864,7 +909,7 @@ static void PrintServer(const ServiceDescriptor* service,
       p->Print(
           *vars,
           "$CodedInputStream$ is = $CodedInputStream$.newInstance(payload.getData());\n"
-          "return service.$lower_method_name$($input_type$.parseFrom(is));\n");
+          "return service.$lower_method_name$($input_type$.parseFrom(is), metadata);\n");
       p->Outdent();
       p->Print("}\n");
     }
@@ -928,7 +973,7 @@ static void PrintServer(const ServiceDescriptor* service,
       p->Print(
           *vars,
           "$CodedInputStream$ is = $CodedInputStream$.newInstance(payload.getData());\n"
-          "return service.$lower_method_name$($input_type$.parseFrom(is)).map(serializer).transform($lower_method_name$);\n");
+          "return service.$lower_method_name$($input_type$.parseFrom(is), metadata).map(serializer).transform($lower_method_name$);\n");
       p->Outdent();
       p->Print("}\n");
     }
@@ -992,7 +1037,7 @@ static void PrintServer(const ServiceDescriptor* service,
       p->Print(
           *vars,
           "$CodedInputStream$ is = $CodedInputStream$.newInstance(payload.getData());\n"
-          "return service.$lower_method_name$($input_type$.parseFrom(is)).map(serializer).transform($lower_method_name$);\n");
+          "return service.$lower_method_name$($input_type$.parseFrom(is), metadata).map(serializer).transform($lower_method_name$);\n");
       p->Outdent();
       p->Print("}\n");
     }
@@ -1064,11 +1109,11 @@ static void PrintServer(const ServiceDescriptor* service,
       if (method->server_streaming()) {
         p->Print(
             *vars,
-            "return service.$lower_method_name$(messages).map(serializer).transform($lower_method_name$);\n");
+            "return service.$lower_method_name$(messages, metadata).map(serializer).transform($lower_method_name$);\n");
       } else {
         p->Print(
             *vars,
-            "return service.$lower_method_name$(messages).map(serializer).transform($lower_method_name$).$flux$();\n");
+            "return service.$lower_method_name$(messages, metadata).map(serializer).transform($lower_method_name$).$flux$();\n");
       }
 
       p->Outdent();
@@ -1221,6 +1266,7 @@ void GenerateInterface(const ServiceDescriptor* service,
   vars["Mono"] = "reactor.core.publisher.Mono";
   vars["Publisher"] = "org.reactivestreams.Publisher";
   vars["Generated"] = "javax.annotation.Generated";
+  vars["ByteBuf"] = "io.netty.buffer.ByteBuf";
 
   Printer printer(out, '$');
   string package_name = ServiceJavaPackage(service->file());
@@ -1255,6 +1301,7 @@ void GenerateClient(const ServiceDescriptor* service,
   vars["ByteBufPayload"] = "io.rsocket.util.ByteBufPayload";
   vars["ByteBuf"] = "io.netty.buffer.ByteBuf";
   vars["ByteBufAllocator"] = "io.netty.buffer.ByteBufAllocator";
+  vars["Unpooled"] = "io.netty.buffer.Unpooled";
   vars["ByteBuffer"] = "java.nio.ByteBuffer";
   vars["CodedInputStream"] = "com.google.protobuf.CodedInputStream";
   vars["CodedOutputStream"] = "com.google.protobuf.CodedOutputStream";

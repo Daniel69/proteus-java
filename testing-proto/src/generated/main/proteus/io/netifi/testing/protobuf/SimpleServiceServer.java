@@ -37,7 +37,7 @@ public final class SimpleServiceServer extends io.netifi.proteus.AbstractProteus
       switch(io.netifi.proteus.frames.ProteusMetadata.methodId(metadata)) {
         case SimpleService.METHOD_FIRE_AND_FORGET: {
           com.google.protobuf.CodedInputStream is = com.google.protobuf.CodedInputStream.newInstance(payload.getData());
-          return service.fireAndForget(io.netifi.testing.protobuf.SimpleRequest.parseFrom(is));
+          return service.fireAndForget(io.netifi.testing.protobuf.SimpleRequest.parseFrom(is), metadata);
         }
         default: {
           return reactor.core.publisher.Mono.error(new UnsupportedOperationException());
@@ -57,7 +57,7 @@ public final class SimpleServiceServer extends io.netifi.proteus.AbstractProteus
       switch(io.netifi.proteus.frames.ProteusMetadata.methodId(metadata)) {
         case SimpleService.METHOD_REQUEST_REPLY: {
           com.google.protobuf.CodedInputStream is = com.google.protobuf.CodedInputStream.newInstance(payload.getData());
-          return service.requestReply(io.netifi.testing.protobuf.SimpleRequest.parseFrom(is)).map(serializer).transform(requestReply);
+          return service.requestReply(io.netifi.testing.protobuf.SimpleRequest.parseFrom(is), metadata).map(serializer).transform(requestReply);
         }
         default: {
           return reactor.core.publisher.Mono.error(new UnsupportedOperationException());
@@ -77,7 +77,7 @@ public final class SimpleServiceServer extends io.netifi.proteus.AbstractProteus
       switch(io.netifi.proteus.frames.ProteusMetadata.methodId(metadata)) {
         case SimpleService.METHOD_REQUEST_STREAM: {
           com.google.protobuf.CodedInputStream is = com.google.protobuf.CodedInputStream.newInstance(payload.getData());
-          return service.requestStream(io.netifi.testing.protobuf.SimpleRequest.parseFrom(is)).map(serializer).transform(requestStream);
+          return service.requestStream(io.netifi.testing.protobuf.SimpleRequest.parseFrom(is), metadata).map(serializer).transform(requestStream);
         }
         default: {
           return reactor.core.publisher.Flux.error(new UnsupportedOperationException());
@@ -98,12 +98,12 @@ public final class SimpleServiceServer extends io.netifi.proteus.AbstractProteus
         case SimpleService.METHOD_STREAMING_REQUEST_SINGLE_RESPONSE: {
           reactor.core.publisher.Flux<io.netifi.testing.protobuf.SimpleRequest> messages =
             publisher.map(deserializer(io.netifi.testing.protobuf.SimpleRequest.parser()));
-          return service.streamingRequestSingleResponse(messages).map(serializer).transform(streamingRequestSingleResponse).flux();
+          return service.streamingRequestSingleResponse(messages, metadata).map(serializer).transform(streamingRequestSingleResponse).flux();
         }
         case SimpleService.METHOD_STREAMING_REQUEST_AND_RESPONSE: {
           reactor.core.publisher.Flux<io.netifi.testing.protobuf.SimpleRequest> messages =
             publisher.map(deserializer(io.netifi.testing.protobuf.SimpleRequest.parser()));
-          return service.streamingRequestAndResponse(messages).map(serializer).transform(streamingRequestAndResponse);
+          return service.streamingRequestAndResponse(messages, metadata).map(serializer).transform(streamingRequestAndResponse);
         }
         default: {
           return reactor.core.publisher.Flux.error(new UnsupportedOperationException());

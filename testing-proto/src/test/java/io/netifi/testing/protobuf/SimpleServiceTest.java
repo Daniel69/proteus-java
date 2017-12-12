@@ -2,6 +2,7 @@ package io.netifi.testing.protobuf;
 
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import io.netifi.proteus.rs.RequestHandlingRSocket;
+import io.netty.buffer.ByteBuf;
 import io.rsocket.Frame;
 import io.rsocket.RSocket;
 import io.rsocket.RSocketFactory;
@@ -127,13 +128,13 @@ public class SimpleServiceTest {
   static class DefaultSimpleService implements SimpleService {
 
     @Override
-    public Mono<Void> fireAndForget(SimpleRequest message) {
+    public Mono<Void> fireAndForget(SimpleRequest message, ByteBuf metadata) {
       System.out.println("got message -> " + message.getRequestMessage());
       return Mono.empty();
     }
 
     @Override
-    public Mono<SimpleResponse> requestReply(SimpleRequest message) {
+    public Mono<SimpleResponse> requestReply(SimpleRequest message, ByteBuf metadata) {
       return Mono.fromCallable(
           () ->
               SimpleResponse.newBuilder()
@@ -142,7 +143,7 @@ public class SimpleServiceTest {
     }
 
     @Override
-    public Mono<SimpleResponse> streamingRequestSingleResponse(Publisher<SimpleRequest> messages) {
+    public Mono<SimpleResponse> streamingRequestSingleResponse(Publisher<SimpleRequest> messages, ByteBuf metadata) {
       return Flux.from(messages)
           .windowTimeout(10, Duration.ofSeconds(500))
           .take(1)
@@ -178,7 +179,7 @@ public class SimpleServiceTest {
     }
 
     @Override
-    public Flux<SimpleResponse> requestStream(SimpleRequest message) {
+    public Flux<SimpleResponse> requestStream(SimpleRequest message, ByteBuf metadata) {
       String requestMessage = message.getRequestMessage();
       return Flux.interval(Duration.ofMillis(200))
           .onBackpressureDrop()
@@ -187,8 +188,8 @@ public class SimpleServiceTest {
     }
 
     @Override
-    public Flux<SimpleResponse> streamingRequestAndResponse(Publisher<SimpleRequest> messages) {
-      return Flux.from(messages).flatMap(this::requestReply);
+    public Flux<SimpleResponse> streamingRequestAndResponse(Publisher<SimpleRequest> messages, ByteBuf metadata) {
+      return Flux.from(messages).flatMap(message -> requestReply(message, metadata));
     }
   }
 }
