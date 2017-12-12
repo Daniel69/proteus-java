@@ -11,6 +11,15 @@ public final class SimpleServiceServer extends io.netifi.proteus.AbstractProteus
   private final java.util.function.Function<? super org.reactivestreams.Publisher<io.rsocket.Payload>, ? extends org.reactivestreams.Publisher<io.rsocket.Payload>> streamingRequestSingleResponse;
   private final java.util.function.Function<? super org.reactivestreams.Publisher<io.rsocket.Payload>, ? extends org.reactivestreams.Publisher<io.rsocket.Payload>> streamingRequestAndResponse;
 
+  public SimpleServiceServer(SimpleService service) {
+    this.service = service;
+    this.requestReply = java.util.function.Function.identity();
+    this.fireAndForget = java.util.function.Function.identity();
+    this.requestStream = java.util.function.Function.identity();
+    this.streamingRequestSingleResponse = java.util.function.Function.identity();
+    this.streamingRequestAndResponse = java.util.function.Function.identity();
+  }
+
   public SimpleServiceServer(SimpleService service, io.micrometer.core.instrument.MeterRegistry registry) {
     this.service = service;
     this.requestReply = io.netifi.proteus.metrics.ProteusMetrics.timed(registry, "proteus.server", "namespace", "io.netifi.testing", "service", "SimpleService", "method", "requestReply");

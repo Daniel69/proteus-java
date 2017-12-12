@@ -442,6 +442,27 @@ static void PrintClient(const ServiceDescriptor* service,
   p->Print(
       *vars,
       "\n"
+      "public $client_class_name$($RSocket$ rSocket) {\n");
+  p->Indent();
+  p->Print(
+      *vars,
+      "this.rSocket = rSocket;\n");
+
+  // RPC metrics
+  for (int i = 0; i < service->method_count(); ++i) {
+    const MethodDescriptor* method = service->method(i);
+    (*vars)["lower_method_name"] = LowerMethodName(method);
+
+    p->Print(
+        *vars,
+        "this.$lower_method_name$ = $Function$.identity();\n");
+  }
+
+  p->Outdent();
+  p->Print("}\n\n");
+
+  p->Print(
+      *vars,
       "public $client_class_name$($RSocket$ rSocket, $MeterRegistry$ registry) {\n");
   p->Indent();
   p->Print(
@@ -812,6 +833,27 @@ static void PrintServer(const ServiceDescriptor* service,
   p->Print(
       *vars,
       "\n"
+      "public $server_class_name$($service_name$ service) {\n");
+  p->Indent();
+  p->Print(
+      *vars,
+      "this.service = service;\n");
+
+  // RPC metrics
+  for (int i = 0; i < service->method_count(); ++i) {
+    const MethodDescriptor* method = service->method(i);
+    (*vars)["lower_method_name"] = LowerMethodName(method);
+
+    p->Print(
+        *vars,
+        "this.$lower_method_name$ = $Function$.identity();\n");
+  }
+
+  p->Outdent();
+  p->Print("}\n\n");
+
+  p->Print(
+      *vars,
       "public $server_class_name$($service_name$ service, $MeterRegistry$ registry) {\n");
   p->Indent();
   p->Print(
